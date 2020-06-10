@@ -22,7 +22,7 @@ public class LivePusher {
     private VideoChannel videoChannel;
 
     /**
-     *
+     * 创建直播推流器
      * @param activity
      *          初始化推流功能的界面
      * @param width
@@ -38,8 +38,11 @@ public class LivePusher {
      */
     public LivePusher(Activity activity, int width, int height, int bitrate,
                       int fps, int cameraId) {
+        // 初始化 native 层的环境
         native_init();
+        // 初始化视频处理通道
         videoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
+        // 初始化音频处理通道
         audioChannel = new AudioChannel();
     }
 
