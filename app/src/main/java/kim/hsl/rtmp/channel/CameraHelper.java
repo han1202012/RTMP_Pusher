@@ -81,11 +81,11 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
      */
     private void startPreview() {
         try {
-            //获得camera对象
+            // 1. 打开指定方向的 Camera 摄像头
             mCamera = Camera.open(mCameraFacing);
-            //配置camera的属性
+            // 2. 获取 Camera 摄像头参数, 之后需要修改配置该参数
             Camera.Parameters parameters = mCamera.getParameters();
-            //设置预览数据格式为nv21
+            // 3. 设置预览数据格式为nv21
             parameters.setPreviewFormat(ImageFormat.NV21);
             //这是摄像头宽、高
             setPreviewSize(parameters);
@@ -135,16 +135,40 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
         mCamera.setDisplayOrientation(result);
     }
 
+    /**
+     * 设置 Camera 摄像头的参数
+     * 宽度, 高度
+     *
+     * 摄像头支持的宽高值是固定的, 不能人为的随意设置
+     * 手机给出一组支持的宽高值, 可以选择其中的某一个进行设置
+     *
+     * 用户虽然设置了一个宽高值, 这个宽高值肯定不能直接设置给 Camera 摄像头
+     * 需要对比 Camera 支持的一组宽高值, 哪一个与用户设置的最接近
+     * 这个最相似的宽高值就是我们要设置的值
+     *
+     * 对比方法 : 对比像素总数
+     * 用户设置像素总数 : 用户设置的 宽 高 像素值相乘, 就是用户设置像素总数
+     * 系统支持像素总数 : 屏幕支持的 宽 高 像素值相乘, 就是系统支持的某个宽高的像素总数
+     *
+     * 找出上述 用户设置像素总数 和 系统支持像素总数 最接近的的那个 系统支持像素总数
+     *      对应的 屏幕支持的 宽 高 值
+     *
+     * @param parameters
+     */
     private void setPreviewSize(Camera.Parameters parameters) {
-        //获取摄像头支持的宽、高
+        // 1. 获取摄像头参数中的预览图像大小参数
         List<Camera.Size> supportedPreviewSizes = parameters.getSupportedPreviewSizes();
+
+
+        // 下面开始遍历获取与用户设置的宽高值最接近的, Camera 支持的宽高值
+
+
+        // 2. 获取系统 Camera 摄像头支持的最低的摄像头
+        //      Camera.Size 中有宽度和高度参数
         Camera.Size size = supportedPreviewSizes.get(0);
-        Log.d(TAG, "支持 " + size.width + "x" + size.height);
-        //选择一个与设置的差距最小的支持分辨率
-        // 10x10 20x20 30x30
-        // 12x12
         int m = Math.abs(size.height * size.width - mWidth * mHeight);
         supportedPreviewSizes.remove(0);
+
         Iterator<Camera.Size> iterator = supportedPreviewSizes.iterator();
         //遍历
         while (iterator.hasNext()) {
