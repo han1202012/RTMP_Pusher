@@ -23,7 +23,9 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
 
         // 初始化 Camera 相关参数
         mCameraHelper = new CameraHelper(activity, cameraId, width, height);
+        // 设置 Camera 预览数据回调接口
         mCameraHelper.setPreviewCallback(this);
+        // 设置
         mCameraHelper.setOnChangedSizeListener(this);
     }
 
@@ -33,8 +35,8 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
 
 
     /**
-     * 得到nv21数据 已经旋转好的
-     *
+     * Camera 摄像头采集数据完毕, 通过回调接口传回数据
+     * 数据格式是 nv21 格式的
      * @param data
      * @param camera
      */
