@@ -11,7 +11,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
 
 
     private LivePusher mLivePusher;
-    private CameraHelper cameraHelper;
+    private CameraHelper mCameraHelper;
     private int mBitrate;
     private int mFps;
     private boolean isLiving;
@@ -20,13 +20,15 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
         mLivePusher = livePusher;
         mBitrate = bitrate;
         mFps = fps;
-        cameraHelper = new CameraHelper(activity, cameraId, width, height);
-        cameraHelper.setPreviewCallback(this);
-        cameraHelper.setOnChangedSizeListener(this);
+
+        // 初始化 Camera 相关参数
+        mCameraHelper = new CameraHelper(activity, cameraId, width, height);
+        mCameraHelper.setPreviewCallback(this);
+        mCameraHelper.setOnChangedSizeListener(this);
     }
 
     public void setPreviewDisplay(SurfaceHolder surfaceHolder) {
-        cameraHelper.setPreviewDisplay(surfaceHolder);
+        mCameraHelper.setPreviewDisplay(surfaceHolder);
     }
 
 
@@ -44,7 +46,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
     }
 
     public void switchCamera() {
-        cameraHelper.switchCamera();
+        mCameraHelper.switchCamera();
     }
 
     /**

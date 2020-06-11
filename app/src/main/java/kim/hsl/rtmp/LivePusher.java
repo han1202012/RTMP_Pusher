@@ -14,12 +14,12 @@ public class LivePusher {
     /**
      * 处理音频的通道
      */
-    private AudioChannel audioChannel;
+    private AudioChannel mAudioChannel;
 
     /**
      * 处理视频的通道
      */
-    private VideoChannel videoChannel;
+    private VideoChannel mVideoChannel;
 
     /**
      * 创建直播推流器
@@ -41,28 +41,32 @@ public class LivePusher {
         // 初始化 native 层的环境
         native_init();
         // 初始化视频处理通道
-        videoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
+        mVideoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
         // 初始化音频处理通道
-        audioChannel = new AudioChannel();
+        mAudioChannel = new AudioChannel();
     }
 
+    /**
+     * 设置图像显示组件
+     * @param surfaceHolder
+     */
     public void setPreviewDisplay(SurfaceHolder surfaceHolder) {
-        videoChannel.setPreviewDisplay(surfaceHolder);
+        mVideoChannel.setPreviewDisplay(surfaceHolder);
     }
 
     public void switchCamera() {
-        videoChannel.switchCamera();
+        mVideoChannel.switchCamera();
     }
 
     public void startLive(String path) {
         native_start(path);
-        videoChannel.startLive();
-        audioChannel.startLive();
+        mVideoChannel.startLive();
+        mAudioChannel.startLive();
     }
 
     public void stopLive(){
-        videoChannel.stopLive();
-        audioChannel.stopLive();
+        mVideoChannel.stopLive();
+        mAudioChannel.stopLive();
         native_stop();
     }
 

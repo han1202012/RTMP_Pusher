@@ -10,14 +10,33 @@ import android.view.SurfaceHolder;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 该类中封装了对 Camera 对象的一些操作
+ */
 public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallback {
 
     private static final String TAG = "CameraHelper";
+
+    /**
+     * 摄像头显示数据组件所在的界面
+     * 主要是为了方便的获取界面参数
+     */
     private Activity mActivity;
     private int mHeight;
     private int mWidth;
-    private int mCameraId;
+
+    /**
+     * 摄像头选择, 前置摄像头还是后置像头
+     * 前置摄像头 : Camera.CameraInfo.CAMERA_FACING_FRONT
+     * 后置摄像头 : Camera.CameraInfo.CAMERA_FACING_BACK
+     */
+    private int mCameraFacing;
+
+    /**
+     * 摄像头
+     */
     private Camera mCamera;
+
     private byte[] buffer;
     private SurfaceHolder mSurfaceHolder;
     private Camera.PreviewCallback mPreviewCallback;
@@ -26,37 +45,44 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
 
     public CameraHelper(Activity activity, int cameraId, int width, int height) {
         mActivity = activity;
-        mCameraId = cameraId;
+        mCameraFacing = cameraId;
         mWidth = width;
         mHeight = height;
     }
 
     public void switchCamera() {
-        if (mCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
-            mCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
+        if (mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+            mCameraFacing = Camera.CameraInfo.CAMERA_FACING_FRONT;
         } else {
-            mCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
+            mCameraFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
         }
         stopPreview();
         startPreview();
     }
 
+    /**
+     * 释放 Camera 摄像头
+     */
     private void stopPreview() {
         if (mCamera != null) {
-            //预览数据回调接口
+            // 下面的 API 都是 Android 提供的
+            // 1. 设置预览回调接口, 这里设置 null 即可
             mCamera.setPreviewCallback(null);
-            //停止预览
+            // 2. 停止图像数据预览
             mCamera.stopPreview();
-            //释放摄像头
+            // 3. 释放置空
             mCamera.release();
             mCamera = null;
         }
     }
 
+    /**
+     * 开启 Camera 摄像头
+     */
     private void startPreview() {
         try {
             //获得camera对象
-            mCamera = Camera.open(mCameraId);
+            mCamera = Camera.open(mCameraFacing);
             //配置camera的属性
             Camera.Parameters parameters = mCamera.getParameters();
             //设置预览数据格式为nv21
@@ -81,7 +107,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
 
     private void setPreviewOrientation(Camera.Parameters parameters) {
         Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(mCameraId, info);
+        Camera.getCameraInfo(mCameraFacing, info);
         mRotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
         int degrees = 0;
         switch (mRotation) {
@@ -137,8 +163,15 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
     }
 
 
+    /**
+     * 设置预览组件
+     * @param surfaceHolder
+     */
     public void setPreviewDisplay(SurfaceHolder surfaceHolder) {
         mSurfaceHolder = surfaceHolder;
+
+        // 设置相关的回调接口
+        // 在 mSurfaceHolder 对应的组件创建, 画布大小改变, 销毁时, 回调相应的接口方法
         mSurfaceHolder.addCallback(this);
     }
 
@@ -147,15 +180,22 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
     }
 
     @Override
-    public void surfaceCreated(SurfaceHolder holder) {
+    public void surfaceCreated(SurfaceHolder holder) { }
 
-    }
-
+    /**
+     * 处理画布改变
+     *
+     * 按下 Home 键, 退出界面, 横竖屏切换, 等操作
+     *
+     * @param holder
+     * @param format
+     * @param width
+     * @param height
+     */
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        //释放摄像头
+        // 先释放 Camera, 然后重新启动
         stopPreview();
-        //开启摄像头
         startPreview();
     }
 
