@@ -22,7 +22,15 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
      * 主要是为了方便的获取界面参数
      */
     private Activity mActivity;
+
+    /**
+     * 用户设置的高度
+     */
     private int mHeight;
+
+    /**
+     * 用户设置的宽度
+     */
     private int mWidth;
 
     /**
@@ -85,7 +93,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
             mCamera = Camera.open(mCameraFacing);
             // 2. 获取 Camera 摄像头参数, 之后需要修改配置该参数
             Camera.Parameters parameters = mCamera.getParameters();
-            // 3. 设置预览数据格式为nv21
+            // 3. 设置 Camera 采集后预览图像的数据格式 ImageFormat.NV21
             parameters.setPreviewFormat(ImageFormat.NV21);
             //这是摄像头宽、高
             setPreviewSize(parameters);
@@ -160,30 +168,40 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
         List<Camera.Size> supportedPreviewSizes = parameters.getSupportedPreviewSizes();
 
 
-        // 下面开始遍历获取与用户设置的宽高值最接近的, Camera 支持的宽高值
+        // 2. 下面开始遍历获取与用户设置的宽高值最接近的, Camera 支持的宽高值
 
 
-        // 2. 获取系统 Camera 摄像头支持的最低的摄像头
+        // 获取系统 Camera 摄像头支持的最低的摄像头
         //      Camera.Size 中有宽度和高度参数
-        Camera.Size size = supportedPreviewSizes.get(0);
-        int m = Math.abs(size.height * size.width - mWidth * mHeight);
-        supportedPreviewSizes.remove(0);
+        Camera.Size currentSupportSize = supportedPreviewSizes.get(0);
+        // 对比第 0 个系统支持的像素总数 与 用户设置的像素总数 差值
+        //      之后会逐个对比, 每个系统支持的像素总数 与 用户设置像素总数 差值
+        //      选择差值最小的那个像素值
+        int minDeltaOfPixels = Math.abs(currentSupportSize.height * currentSupportSize.width - mWidth * mHeight);
+        // 对比完成之后, 删除像素值
+        //supportedPreviewSizes.remove(0);
 
+        // 遍历系统支持的宽高像素集合, 如果
         Iterator<Camera.Size> iterator = supportedPreviewSizes.iterator();
-        //遍历
         while (iterator.hasNext()) {
-            Camera.Size next = iterator.next();
-            Log.d(TAG, "支持 " + next.width + "x" + next.height);
-            int n = Math.abs(next.height * next.width - mWidth * mHeight);
-            if (n < m) {
-                m = n;
-                size = next;
+            // 当前遍历的的系统支持的像素宽高
+            Camera.Size tmpSupportSize = iterator.next();
+            // 计算当前的设备支持宽高与用户设置的宽高的像素点个数差值
+            int tmpDeltaOfPixels = Math.abs(tmpSupportSize.height * tmpSupportSize.width - mWidth * mHeight);
+
+            // 如果当前的差分值 小于 当前最小像素差分值, 那么使用当前的数据替代
+            if (tmpDeltaOfPixels < minDeltaOfPixels) {
+                minDeltaOfPixels = tmpDeltaOfPixels;
+                currentSupportSize = tmpSupportSize;
             }
         }
-        mWidth = size.width;
-        mHeight = size.height;
+
+        // 3. 选择出了最合适的 Camera 支持的宽高值
+        mWidth = currentSupportSize.width;
+        mHeight = currentSupportSize.height;
+
+        // 4. 为 Camera 设置最合适的像素值
         parameters.setPreviewSize(mWidth, mHeight);
-        Log.d(TAG, "设置预览分辨率 width:" + size.width + " height:" + size.height);
     }
 
 
