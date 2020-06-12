@@ -77,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         mSurfaceView = findViewById(R.id.surfaceView);
 
         // 创建直播推流器, 用于将采集的视频数据推流到服务器端
+        // 800_000 代表 800K 的码率
         mLivePusher = new LivePusher(this, 800, 480, 800_000, 10, Camera.CameraInfo.CAMERA_FACING_BACK);
 
         // 设置 Camera 采集的图像本地预览的组件, 在 mSurfaceView 界面先绘制摄像头
