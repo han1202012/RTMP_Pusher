@@ -10,7 +10,8 @@ add_library( # 函数库名称
              SHARED
 
              # 源文件
-             native-lib.cpp )
+             native-lib.cpp
+             VedioChannel.cpp)
 
 find_library( # 日志库
               log-lib

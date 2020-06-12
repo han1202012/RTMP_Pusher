@@ -4,12 +4,18 @@
 #include <x264.h>
 
 #include "SafeQueue.h"
+#include "VedioChannel.h"
 
 /**
  * RTMPPacket 结构体是打包好的 RTMP 数据包
  * 将该数据包发送到 RTMP 服务器中
  */
 SafeQueue<RTMPPacket *> packets;
+
+/**
+ * 视频处理对象
+ */
+VedioChannel* vedioChannel;
 
 /**
  * 线程安全队列 SafeQueue<RTMPPacket *> packets 释放元素的方法
@@ -30,6 +36,7 @@ JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     // 0. 将 x264 编码的过程, RTMPDump 的编码过程, 封装到单独的工具类中
     //    使用该工具类, 对数据进行编码
+    vedioChannel = new VedioChannel;
 
 
     // 1. 数据队列, 用于存储打包好的数据
@@ -37,8 +44,12 @@ Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     packets.setReleaseHandle(releaseRTMPPackets);
 }
 
+
+// 设置视频编码参数
 extern "C"
 JNIEXPORT void JNICALL
-Java_kim_hsl_rtmp_LivePusher_native_1start(JNIEnv *env, jobject thiz, jstring path) {
-    // TODO: implement native_start()
+Java_kim_hsl_rtmp_LivePusher_native_1setVideoEncoderParameters(JNIEnv *env, jobject thiz,
+                                                               jint width, jint height, jint fps,
+                                                               jint bitrate) {
+    vedioChannel->setVideoEncoderParameters(width, height, fps, bitrate);
 }

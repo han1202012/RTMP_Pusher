@@ -75,7 +75,18 @@ public class LivePusher {
 
     public native void native_start(String path);
 
-    public native void native_setVideoEncInfo(int width, int height, int fps, int bitrate);
+    /**
+     * 设置视频编码参数
+     * @param width
+     *          宽度
+     * @param height
+     *          高度
+     * @param fps
+     *          帧率
+     * @param bitrate
+     *          码率
+     */
+    public native void native_setVideoEncoderParameters(int width, int height, int fps, int bitrate);
 
     public native void native_pushVideo(byte[] data);
 

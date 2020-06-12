@@ -279,6 +279,6 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     }
 
     public interface OnChangedSizeListener {
-        void onChanged(int w, int h);
+        void onChanged(int width, int heighht);
     }
 }

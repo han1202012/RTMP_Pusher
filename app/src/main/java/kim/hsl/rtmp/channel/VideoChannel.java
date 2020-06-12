@@ -12,7 +12,15 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
 
     private LivePusher mLivePusher;
     private CameraManager mCameraHelper;
+
+    /**
+     * 视频码率
+     */
     private int mBitrate;
+
+    /**
+     * 视频帧率
+     */
     private int mFps;
 
     /**
@@ -65,13 +73,15 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     /**
      * 真实摄像头数据的宽、高
      *
-     * @param w
-     * @param h
+     * @param width
+     *      真实摄像头的宽度
+     * @param height
+     *      真实摄像头的高度
      */
     @Override
-    public void onChanged(int w, int h) {
-        //初始化编码器
-        mLivePusher.native_setVideoEncInfo(w, h, mFps, mBitrate);
+    public void onChanged(int width, int height) {
+        // 设置视频参数, 宽度, 高度, 码率, 帧率
+        mLivePusher.native_setVideoEncoderParameters(width, height, mFps, mBitrate);
     }
 
     public void startLive() {
