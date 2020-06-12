@@ -77,11 +77,12 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     private void stopCameraNV21DataPreview() {
         if (mCamera != null) {
             // 下面的 API 都是 Android 提供的
+
             // 1. 设置预览回调接口, 这里设置 null 即可
             mCamera.setPreviewCallback(null);
             // 2. 停止图像数据预览
             mCamera.stopPreview();
-            // 3. 释放置空
+            // 3. 释放 Camera
             mCamera.release();
             mCamera = null;
         }
@@ -102,7 +103,7 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
             // 4. 设置摄像头预览尺寸
             setPreviewSize(parameters);
             // 5. 设置图像传感器参数
-            //setCameraPreviewOrientation(parameters);
+            setCameraPreviewOrientation(parameters);
             mCamera.setParameters(parameters);
             // 6. 计算出 NV21 格式图像 mWidth * mHeight 像素数据大小
             mNv21DataBuffer = new byte[mWidth * mHeight * 3 / 2];
