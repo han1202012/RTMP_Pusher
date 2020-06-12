@@ -11,6 +11,20 @@
  */
 SafeQueue<RTMPPacket *> packets;
 
+/**
+ * 线程安全队列 SafeQueue<RTMPPacket *> packets 释放元素的方法
+ * 函数的类型是 typedef void (*ReleaseHandle)(T &);
+ * 返回值 void
+ * 传入参数 T 元素类型的引用, 元素类型是 RTMPPacket * 的
+ * @param rtmpPacket
+ */
+void releaseRTMPPackets(RTMPPacket * & rtmpPacket){
+    if(rtmpPacket){
+        delete rtmpPacket;
+        rtmpPacket = 0;
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
@@ -20,4 +34,5 @@ Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
 
     // 1. 数据队列, 用于存储打包好的数据
     //    在单独的线程中将该队列中的数据发送给服务器
+    packets.setReleaseHandle(releaseRTMPPackets);
 }
