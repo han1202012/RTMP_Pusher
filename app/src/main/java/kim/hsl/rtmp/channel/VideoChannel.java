@@ -54,7 +54,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         if (mIsLiving) {
-            //mLivePusher.native_pushVideo(data);
+            mLivePusher.native_pushVideo(data);
         }
     }
 
@@ -71,7 +71,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     @Override
     public void onChanged(int w, int h) {
         //初始化编码器
-        //mLivePusher.native_setVideoEncInfo(w, h, mFps, mBitrate);
+        mLivePusher.native_setVideoEncInfo(w, h, mFps, mBitrate);
     }
 
     public void startLive() {

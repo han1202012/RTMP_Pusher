@@ -54,7 +54,7 @@ public class LivePusher {
         mVideoChannel.setPreviewDisplay(surfaceHolder);
     }
 
-    /*public void switchCamera() {
+    public void switchCamera() {
         mVideoChannel.switchCamera();
     }
 
@@ -81,5 +81,5 @@ public class LivePusher {
 
     public native void native_stop();
 
-    public native void native_release();*/
+    public native void native_release();
 }
