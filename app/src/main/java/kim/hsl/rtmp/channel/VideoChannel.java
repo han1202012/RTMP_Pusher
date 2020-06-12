@@ -7,11 +7,11 @@ import android.view.SurfaceHolder;
 import kim.hsl.rtmp.LivePusher;
 
 
-public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChangedSizeListener {
+public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnChangedSizeListener {
 
 
     private LivePusher mLivePusher;
-    private CameraHelper mCameraHelper;
+    private CameraManager mCameraHelper;
     private int mBitrate;
     private int mFps;
 
@@ -26,7 +26,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
         mFps = fps;
 
         // 1. 初始化 Camera 相关参数
-        mCameraHelper = new CameraHelper(activity, cameraId, width, height);
+        mCameraHelper = new CameraManager(activity, cameraId, width, height);
         // 2. 设置 Camera 预览数据回调接口
         //    通过该接口可以在本类中的实现的 onPreviewFrame 方法中
         //    获取到 NV21 数据
@@ -54,7 +54,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         if (mIsLiving) {
-            mLivePusher.native_pushVideo(data);
+            //mLivePusher.native_pushVideo(data);
         }
     }
 
@@ -71,7 +71,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
     @Override
     public void onChanged(int w, int h) {
         //初始化编码器
-        mLivePusher.native_setVideoEncInfo(w, h, mFps, mBitrate);
+        //mLivePusher.native_setVideoEncInfo(w, h, mFps, mBitrate);
     }
 
     public void startLive() {

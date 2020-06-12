@@ -3,6 +3,7 @@ package kim.hsl.rtmp.channel;
 import android.app.Activity;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
@@ -12,7 +13,7 @@ import java.util.List;
 /**
  * 该类中封装了对 Camera 对象的一些操作
  */
-public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallback {
+public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCallback {
 
     private static final String TAG = "CameraHelper";
 
@@ -53,7 +54,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
     private int mRotation;
     private OnChangedSizeListener mOnChangedSizeListener;
 
-    public CameraHelper(Activity activity, int cameraId, int width, int height) {
+    public CameraManager(Activity activity, int cameraId, int width, int height) {
         mActivity = activity;
         mCameraFacing = cameraId;
         mWidth = width;
@@ -91,6 +92,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
      */
     private void startCameraNV21DataPreview() {
         try {
+            Log.i("octopus", "startCameraNV21DataPreview");
             // 1. 打开指定方向的 Camera 摄像头
             mCamera = Camera.open(mCameraFacing);
             // 2. 获取 Camera 摄像头参数, 之后需要修改配置该参数
@@ -100,7 +102,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
             // 4. 设置摄像头预览尺寸
             setPreviewSize(parameters);
             // 5. 设置图像传感器参数
-            setCameraPreviewOrientation(parameters);
+            //setCameraPreviewOrientation(parameters);
             mCamera.setParameters(parameters);
             // 6. 计算出 NV21 格式图像 mWidth * mHeight 像素数据大小
             mNv21DataBuffer = new byte[mWidth * mHeight * 3 / 2];

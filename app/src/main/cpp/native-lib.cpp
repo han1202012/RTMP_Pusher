@@ -36,3 +36,9 @@ Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     //    在单独的线程中将该队列中的数据发送给服务器
     packets.setReleaseHandle(releaseRTMPPackets);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1start(JNIEnv *env, jobject thiz, jstring path) {
+    // TODO: implement native_start()
+}

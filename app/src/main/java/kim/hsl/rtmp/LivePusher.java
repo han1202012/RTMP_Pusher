@@ -39,7 +39,7 @@ public class LivePusher {
     public LivePusher(Activity activity, int width, int height, int bitrate,
                       int fps, int cameraId) {
         // 初始化 native 层的环境
-        native_init();
+        //native_init();
         // 初始化视频处理通道
         mVideoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
         // 初始化音频处理通道
@@ -54,7 +54,7 @@ public class LivePusher {
         mVideoChannel.setPreviewDisplay(surfaceHolder);
     }
 
-    public void switchCamera() {
+    /*public void switchCamera() {
         mVideoChannel.switchCamera();
     }
 
@@ -81,5 +81,5 @@ public class LivePusher {
 
     public native void native_stop();
 
-    public native void native_release();
+    public native void native_release();*/
 }

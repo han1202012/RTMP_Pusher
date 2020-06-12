@@ -1,16 +1,16 @@
 package kim.hsl.rtmp;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.SurfaceView;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-
-    static {
-        System.loadLibrary("native-lib");
-    }
 
     /**
      * 显示图像的 SurfaceView 组件
@@ -22,11 +22,57 @@ public class MainActivity extends AppCompatActivity {
      */
     private LivePusher mLivePusher;
 
+    /**
+     * 需要获取的权限列表
+     */
+    private String[] permissions = new String[]{
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.INTERNET,
+            Manifest.permission.MODIFY_AUDIO_SETTINGS,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.CAMERA
+    };
 
+    /**
+     * 动态申请权限的请求码
+     */
+    private static final int PERMISSION_REQUEST_CODE = 888;
+
+    /**
+     * 动态申请权限
+     */
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private void initPermissions() {
+        if (isLacksPermission()) {
+            //动态申请权限 , 第二参数是请求吗
+            requestPermissions(permissions, PERMISSION_REQUEST_CODE);
+        }
+    }
+
+    /**
+     * 判断是否有 permissions 中的权限
+     * @return
+     */
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public boolean isLacksPermission() {
+        for (String permission : permissions) {
+            if(checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED){
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 初始化权限
+        initPermissions();
 
         mSurfaceView = findViewById(R.id.surfaceView);
 
@@ -36,10 +82,4 @@ public class MainActivity extends AppCompatActivity {
         // 设置 Camera 采集的图像本地预览的组件, 在 mSurfaceView 界面先绘制摄像头
         mLivePusher.setPreviewDisplay(mSurfaceView.getHolder());
     }
-
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native String stringFromJNI();
 }
