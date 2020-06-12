@@ -32,15 +32,21 @@ void VedioChannel::setVideoEncoderParameters(int width, int height, int fps, int
     pthread_mutex_lock(&mMutex);
 
     // 设置视频编码参数
+
+    // 图像宽度
     mWidth = width;
+    // 图像高度
     mHeight = height;
+    // 帧率
     mFps = fps;
+    // 码率
     mBitrate = bitrate;
 
     // 设置 x264 编码器参数
     x264_param_t x264Param;
 
     /*
+     * 获取 x264 编码器参数
      * int x264_param_default_preset( x264_param_t *, const char *preset, const char *tune )
      * 参数一 : x264_param_t * : x264 编码参数指针
      *
@@ -79,13 +85,14 @@ void VedioChannel::setVideoEncoderParameters(int width, int height, int fps, int
     // 该配置与 i_vbv_max_bitrate 配置配套使用, 码率控制缓冲区大小
     x264Param.rc.i_vbv_buffer_size = bitrate / 1000;
 
-    // 设置帧率相关参数
+    // 设置帧率相关参数, 帧率是个有理数, 使用分数形式表示
     x264Param.i_fps_num = fps;  // 分子
     x264Param.i_fps_den = 1;    // 分母
     x264Param.i_timebase_den = x264Param.i_fps_num; //分子
     x264Param.i_timebase_num = x264Param.i_fps_den; //分母
 
 
+    // 下面是关于帧的先关设置
 
     /*
        关键帧数据 I 是否附带 SPS PPS 数据
