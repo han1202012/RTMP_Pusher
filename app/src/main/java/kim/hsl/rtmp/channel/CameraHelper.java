@@ -3,7 +3,6 @@ package kim.hsl.rtmp.channel;
 import android.app.Activity;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
-import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
@@ -45,7 +44,10 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
      */
     private Camera mCamera;
 
-    private byte[] buffer;
+    /**
+     * Camera 预览数据 NV21 格式
+     */
+    private byte[] mNv21DataBuffer;
     private SurfaceHolder mSurfaceHolder;
     private Camera.PreviewCallback mPreviewCallback;
     private int mRotation;
@@ -64,14 +66,14 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
         } else {
             mCameraFacing = Camera.CameraInfo.CAMERA_FACING_BACK;
         }
-        stopPreview();
-        startPreview();
+        stopCameraNV21DataPreview();
+        startCameraNV21DataPreview();
     }
 
     /**
      * 释放 Camera 摄像头
      */
-    private void stopPreview() {
+    private void stopCameraNV21DataPreview() {
         if (mCamera != null) {
             // 下面的 API 都是 Android 提供的
             // 1. 设置预览回调接口, 这里设置 null 即可
@@ -87,7 +89,7 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
     /**
      * 开启 Camera 摄像头
      */
-    private void startPreview() {
+    private void startCameraNV21DataPreview() {
         try {
             // 1. 打开指定方向的 Camera 摄像头
             mCamera = Camera.open(mCameraFacing);
@@ -95,25 +97,36 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
             Camera.Parameters parameters = mCamera.getParameters();
             // 3. 设置 Camera 采集后预览图像的数据格式 ImageFormat.NV21
             parameters.setPreviewFormat(ImageFormat.NV21);
-            //这是摄像头宽、高
+            // 4. 设置摄像头预览尺寸
             setPreviewSize(parameters);
-            // 设置摄像头 图像传感器的角度、方向
-            setPreviewOrientation(parameters);
+            // 5. 设置图像传感器参数
+            setCameraPreviewOrientation(parameters);
             mCamera.setParameters(parameters);
-            buffer = new byte[mWidth * mHeight * 3 / 2];
-            //数据缓存区
-            mCamera.addCallbackBuffer(buffer);
+            // 6. 计算出 NV21 格式图像 mWidth * mHeight 像素数据大小
+            mNv21DataBuffer = new byte[mWidth * mHeight * 3 / 2];
+            // 7. 设置 Camera 预览数据缓存区
+            mCamera.addCallbackBuffer(mNv21DataBuffer);
+            // 8. 设置 Camera 数据采集回调函数, 采集完数据后
+            //    就会回调此 PreviewCallback 接口的
+            //    void onPreviewFrame(byte[] data, Camera camera) 方法
             mCamera.setPreviewCallbackWithBuffer(this);
-            //设置预览画面
+            // 9. 设置预览图像画面的 SurfaceView 画布
             mCamera.setPreviewDisplay(mSurfaceHolder);
-            mOnChangedSizeListener.onChanged(mWidth, mHeight);
+
+            // 11. 开始预览
             mCamera.startPreview();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
 
-    private void setPreviewOrientation(Camera.Parameters parameters) {
+    /**
+     * 设置 Camera 预览方向
+     * 如果不设置, 视频是颠倒的
+     * 该方法内容拷贝自 {@link Camera#setDisplayOrientation} 注释, 这是 Google Docs 提供的
+     * @param parameters
+     */
+    private void setCameraPreviewOrientation(Camera.Parameters parameters) {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(mCameraFacing, info);
         mRotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
@@ -122,13 +135,13 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
             case Surface.ROTATION_0:
                 degrees = 0;
                 break;
-            case Surface.ROTATION_90: // 横屏 左边是头部(home键在右边)
+            case Surface.ROTATION_90:
                 degrees = 90;
                 break;
             case Surface.ROTATION_180:
                 degrees = 180;
                 break;
-            case Surface.ROTATION_270:// 横屏 头部在右边
+            case Surface.ROTATION_270:
                 degrees = 270;
                 break;
         }
@@ -139,7 +152,6 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
         } else { // back-facing
             result = (info.orientation - degrees + 360) % 360;
         }
-        //设置角度
         mCamera.setDisplayOrientation(result);
     }
 
@@ -202,6 +214,9 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
 
         // 4. 为 Camera 设置最合适的像素值
         parameters.setPreviewSize(mWidth, mHeight);
+
+        // 5. 设置大小改变监听
+        mOnChangedSizeListener.onChanged(mWidth, mHeight);
     }
 
 
@@ -237,21 +252,21 @@ public class CameraHelper implements SurfaceHolder.Callback, Camera.PreviewCallb
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         // 先释放 Camera, 然后重新启动
-        stopPreview();
-        startPreview();
+        stopCameraNV21DataPreview();
+        startCameraNV21DataPreview();
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        stopPreview();
+        stopCameraNV21DataPreview();
     }
 
 
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        // data数据依然是倒的
+        // 此时 NV21 数据是颠倒的
         mPreviewCallback.onPreviewFrame(data, camera);
-        camera.addCallbackBuffer(buffer);
+        camera.addCallbackBuffer(mNv21DataBuffer);
     }
 
 

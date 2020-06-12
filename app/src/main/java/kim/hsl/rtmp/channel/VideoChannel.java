@@ -14,21 +14,32 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
     private CameraHelper mCameraHelper;
     private int mBitrate;
     private int mFps;
-    private boolean isLiving;
+
+    /**
+     * 当前是否在直播
+     */
+    private boolean mIsLiving;
 
     public VideoChannel(LivePusher livePusher, Activity activity, int width, int height, int bitrate, int fps, int cameraId) {
         mLivePusher = livePusher;
         mBitrate = bitrate;
         mFps = fps;
 
-        // 初始化 Camera 相关参数
+        // 1. 初始化 Camera 相关参数
         mCameraHelper = new CameraHelper(activity, cameraId, width, height);
-        // 设置 Camera 预览数据回调接口
+        // 2. 设置 Camera 预览数据回调接口
+        //    通过该接口可以在本类中的实现的 onPreviewFrame 方法中
+        //    获取到 NV21 数据
         mCameraHelper.setPreviewCallback(this);
-        // 设置
+        // 3. 通过该回调接口, 可以获取到真实的 Camera 尺寸数据
+        //    设置摄像头预览尺寸完成后, 会回调该接口
         mCameraHelper.setOnChangedSizeListener(this);
     }
 
+    /**
+     * 设置预览图像画布
+     * @param surfaceHolder
+     */
     public void setPreviewDisplay(SurfaceHolder surfaceHolder) {
         mCameraHelper.setPreviewDisplay(surfaceHolder);
     }
@@ -42,7 +53,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
      */
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
-        if (isLiving) {
+        if (mIsLiving) {
             mLivePusher.native_pushVideo(data);
         }
     }
@@ -64,10 +75,10 @@ public class VideoChannel implements Camera.PreviewCallback, CameraHelper.OnChan
     }
 
     public void startLive() {
-        isLiving = true;
+        mIsLiving = true;
     }
 
     public void stopLive() {
-        isLiving = false;
+        mIsLiving = false;
     }
 }
