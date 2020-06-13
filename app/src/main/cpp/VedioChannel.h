@@ -39,6 +39,14 @@ public:
      */
     void setVideoEncoderParameters(int width, int height, int fps, int bitrate);
 
+    /**
+     * 视频数据编码
+     * 接收 int8_t 类型的原因是, 这里处理的是 jbyte* 类型参数
+     * jbyte 类型就是 int8_t 类型
+     * @param data
+     */
+    void encodeCameraData(int8_t *data);
+
 private:
     /**
      * 互斥锁
@@ -58,6 +66,34 @@ private:
     int mHeight;
     int mFps;
     int mBitrate;
+
+    // I240 / NV21 格式的图像数据信息
+    // YUV 数据的个数
+    // Y 代表灰度
+    // U 代表色相, 色彩度, 指的是光的颜色
+    // V 代表饱和度, 指的是光的纯度
+
+    // Y 灰度数据的个数
+    int YByteCount;
+    // 色彩度 U, 饱和度 V 数据个数
+    int UVByteCount;
+
+    // x264 需要编码的图片
+    x264_picture_t *x264EncodePicture = 0;
+
+    /**
+     * x264 视频编码器
+     */
+    x264_t *x264VedioCodec = 0;
+
+    /**
+     * 将 SPS / PPS 数据发送到 RTMP 服务器端
+     * @param sps   SPS 数据
+     * @param pps   PPS 数据
+     * @param spsLen   SPS 长度
+     * @param ppsLen PPS 长度
+     */
+    void sendSpsPpsToRtmpServer(uint8_t *sps, uint8_t *pps, int spsLen, int ppsLen);
 };
 
 

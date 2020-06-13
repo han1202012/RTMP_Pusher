@@ -62,7 +62,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         if (mIsLiving) {
-            mLivePusher.native_pushVideo(data);
+            mLivePusher.native_encodeCameraData(data);
         }
     }
 

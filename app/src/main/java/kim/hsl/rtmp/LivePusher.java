@@ -59,7 +59,7 @@ public class LivePusher {
     }
 
     public void startLive(String path) {
-        native_start(path);
+        native_startRtmpPush(path);
         mVideoChannel.startLive();
         mAudioChannel.startLive();
     }
@@ -71,9 +71,17 @@ public class LivePusher {
     }
 
 
+    /**
+     * 初始化 NDK 环境
+     */
     public native void native_init();
 
-    public native void native_start(String path);
+    /**
+     * 开始向 RTMP 服务器推送数据
+     * 连接远程 RTMP 服务器, 向该服务器推送数据
+     * @param path
+     */
+    public native void native_startRtmpPush(String path);
 
     /**
      * 设置视频编码参数
@@ -88,7 +96,11 @@ public class LivePusher {
      */
     public native void native_setVideoEncoderParameters(int width, int height, int fps, int bitrate);
 
-    public native void native_pushVideo(byte[] data);
+    /**
+     * 执行数据编码操作
+     * @param data
+     */
+    public native void native_encodeCameraData(byte[] data);
 
     public native void native_stop();
 
