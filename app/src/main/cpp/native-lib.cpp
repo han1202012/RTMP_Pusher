@@ -122,6 +122,7 @@ void* startRtmpPush (void* args){
             __android_log_print(ANDROID_LOG_INFO, "RTMP", "设置 RTMP 推流服务器地址 %s 失败", pushPath);
             break;
         }
+
         // 4. 启用 RTMP 写出功能
         RTMP_EnableWrite(rtmp);
 
