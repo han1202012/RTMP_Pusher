@@ -56,6 +56,15 @@ void releaseRTMPPackets(RTMPPacket * & rtmpPacket){
     }
 }
 
+/**
+ * 函数指针实现, 当 RTMPPacket 数据包封装完毕后调用该回调函数
+ * 将该封装好的 RTMPPacket 数据包放入线程安全队列中
+ * typedef void (*RTMPPacketPackUpCallBack)(RTMPPacket* packet);
+ */
+void RTMPPacketPackUpCallBack(RTMPPacket* packet){
+
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {

@@ -7,6 +7,7 @@
 
 #include <pthread.h>
 #include <x264.h>
+#include "librtmp/rtmp.h"
 
 
 /**
@@ -17,6 +18,12 @@
  * 处理 H.264 封装为 RTMP 数据包
  */
 class VedioChannel {
+
+    /**
+     * 函数指针, 当 RTMPPacket 数据包封装完毕后调用该回调函数
+     * 将该封装好的 RTMPPacket 数据包放入线程安全队列中
+     */
+    typedef void (*RTMPPacketPackUpCallBack)(RTMPPacket* packet);
 
 public:
     /**
@@ -47,6 +54,14 @@ public:
      */
     void encodeCameraData(int8_t *data);
 
+    /**
+     * 设置打包完毕回调函数
+     * 当 RTMPPacket 数据包打包完毕后, 就会回调该函数
+     * @param rtmpPacketPackUpCallBack
+     *              函数指针类型
+     */
+    void setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack);
+
 private:
     /**
      * 互斥锁
@@ -73,13 +88,25 @@ private:
     // U 代表色相, 色彩度, 指的是光的颜色
     // V 代表饱和度, 指的是光的纯度
 
-    // Y 灰度数据的个数
+    /**
+     * Y 灰度数据的个数
+     */
     int YByteCount;
-    // 色彩度 U, 饱和度 V 数据个数
+
+    /**
+     * 色彩度 U, 饱和度 V 数据个数
+     */
     int UVByteCount;
 
-    // x264 需要编码的图片
+    /**
+     * x264 需要编码的图片
+     */
     x264_picture_t *x264EncodePicture = 0;
+
+    /**
+     * RTMPPacket 数据包打包完毕回调函数
+     */
+    RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack;
 
     /**
      * x264 视频编码器

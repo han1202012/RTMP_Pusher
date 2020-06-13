@@ -30,6 +30,10 @@ VedioChannel::~VedioChannel() {
     }
 }
 
+void VedioChannel::setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack){
+    this->rtmpPacketPackUpCallBack = rtmpPacketPackUpCallBack;
+}
+
 /**
  * 设置视频编码参数
  * @param width 宽度
@@ -301,56 +305,116 @@ void VedioChannel::encodeCameraData(int8_t *data) {
  */
 void VedioChannel::sendSpsPpsToRtmpServer(uint8_t *sps, uint8_t *pps, int spsLen, int ppsLen) {
     // 创建 RTMP 数据包, 将数据都存入该 RTMP 数据包中
-    RTMPPacket *packet = new RTMPPacket;
+    RTMPPacket *rtmpPacket = new RTMPPacket;
 
-    // 计算整个 SPS 和 PPS 数据的大小
-    int bodysize = 13 + spsLen + 3 + ppsLen;
-    // 设置 RTMP 数据包大小
-    RTMPPacket_Alloc(packet, bodysize);
+    /*
+        计算整个 SPS 和 PPS 数据的大小
+        数据示例 :
+                                 17 00 00 00 00
+        0x00000192	:   01 64 00 32 FF E1 00 19
+        0x0000019a	:   67 64 00 32 AC D9 80 78
+        0x000001a2	:   02 27 E5 84 00 00 03 00
+        0x000001aa	:   04 00 00 1F 40 3C 60 C6
+        0x000001b2	:   68 01 00 05 68 E9 7B 2C
+        0x000001ba	:   8B 00 00 00 39
+
+        17 帧类型, 1 字节
+        00 数据类型, 1 字节
+        00 00 00 合成时间, 3 字节
+        01 版本信息, 1 字节
+        64 00 32 编码规则, 3 字节
+        FF NALU 长度, 1 字节
+        E1 SPS 个数, 1 字节
+        00 19 SPS 长度, 2 字节
+
+        截止到当前位置有 13 字节数据
+
+        spsLen 字节数据, 这里是 25 字节
+
+                        67 64 00 32 AC D9 80 78
+        0x000001a2	:   02 27 E5 84 00 00 03 00
+        0x000001aa	:   04 00 00 1F 40 3C 60 C6
+        0x000001b2	:   68
+
+        01 PPS 个数, 1 字节
+        00 05 PPS 长度, 2 字节
+
+        ppsLen 字节的 PPS 数据
+                                    68 E9 7B 2C
+        0x000001ba	:   8B
+
+        后面的 00 00 00 39 是视频标签的总长度
+        这里再 RTMP 标签中可以不用封装
+     */
+    int rtmpPackagesize = 10 + 3 + spsLen + 3 + ppsLen;
+
+    // 为 RTMP 数据包分配内存
+    RTMPPacket_Alloc(rtmpPacket, rtmpPackagesize);
 
     // 记录下一个要写入数据的索引位置
     int nextPosition = 0;
-    //固定头
-    packet->m_body[nextPosition++] = 0x17;
-    //类型
-    packet->m_body[nextPosition++] = 0x00;
-    //composition time 0x000000
-    packet->m_body[nextPosition++] = 0x00;
-    packet->m_body[nextPosition++] = 0x00;
-    packet->m_body[nextPosition++] = 0x00;
 
-    //版本
-    packet->m_body[nextPosition++] = 0x01;
-    //编码规格
-    packet->m_body[nextPosition++] = sps[1];
-    packet->m_body[nextPosition++] = sps[2];
-    packet->m_body[nextPosition++] = sps[3];
-    packet->m_body[nextPosition++] = 0xFF;
+    // 帧类型数据 : 分为两部分;
+    // 前 4 位表示帧类型, 1 表示关键帧, 2 表示普通帧
+    // 后 4 位表示编码类型, 7 表示 AVC 视频编码
+    rtmpPacket->m_body[nextPosition++] = 0x17;
 
-    //整个sps
-    packet->m_body[nextPosition++] = 0xE1;
-    //sps长度
-    packet->m_body[nextPosition++] = (spsLen >> 8) & 0xff;
-    packet->m_body[nextPosition++] = spsLen & 0xff;
-    memcpy(&packet->m_body[nextPosition], sps, spsLen);
+    // 数据类型, 00 表示 AVC 序列头
+    rtmpPacket->m_body[nextPosition++] = 0x00;
+
+    // 合成时间, 一般设置 00 00 00
+    rtmpPacket->m_body[nextPosition++] = 0x00;
+    rtmpPacket->m_body[nextPosition++] = 0x00;
+    rtmpPacket->m_body[nextPosition++] = 0x00;
+
+    // 版本信息
+    rtmpPacket->m_body[nextPosition++] = 0x01;
+
+    // 编码规格
+    rtmpPacket->m_body[nextPosition++] = sps[1];
+    rtmpPacket->m_body[nextPosition++] = sps[2];
+    rtmpPacket->m_body[nextPosition++] = sps[3];
+
+    // NALU 长度
+    rtmpPacket->m_body[nextPosition++] = 0xFF;
+
+    // SPS 个数
+    rtmpPacket->m_body[nextPosition++] = 0xE1;
+
+    // SPS 长度, 占 2 字节
+    // 设置长度的高位
+    rtmpPacket->m_body[nextPosition++] = (spsLen >> 8) & 0xFF;
+    // 设置长度的低位
+    rtmpPacket->m_body[nextPosition++] = spsLen & 0xFF;
+
+    // 拷贝 SPS 数据
+    // 将 SPS 数据拷贝到 rtmpPacket->m_body[nextPosition] 地址中
+    memcpy(&rtmpPacket->m_body[nextPosition], sps, spsLen);
+    // 累加 SPS 长度信息
     nextPosition += spsLen;
 
-    //pps
-    packet->m_body[nextPosition++] = 0x01;
-    packet->m_body[nextPosition++] = (ppsLen >> 8) & 0xff;
-    packet->m_body[nextPosition++] = (ppsLen) & 0xff;
-    memcpy(&packet->m_body[nextPosition], pps, ppsLen);
+    // PPS 个数
+    rtmpPacket->m_body[nextPosition++] = 0x01;
+
+    // PPS 数据的长度, 占 2 字节
+    // 设置长度的高位
+    rtmpPacket->m_body[nextPosition++] = (ppsLen >> 8) & 0xFF;
+    // 设置长度的低位
+    rtmpPacket->m_body[nextPosition++] = (ppsLen) & 0xFF;
+    // 拷贝 SPS 数据
+    memcpy(&rtmpPacket->m_body[nextPosition], pps, ppsLen);
 
 
-    //视频
-    packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
-    packet->m_nBodySize = bodysize;
-    //随意分配一个管道（尽量避开rtmp.c中使用的）
-    packet->m_nChannel = 10;
-    //sps pps没有时间戳
-    packet->m_nTimeStamp = 0;
-    //不使用绝对时间
-    packet->m_hasAbsTimestamp = 0;
-    packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
-    //callback(packet);
+    // 设置 RTMP 包类型, 视频类型数据
+    rtmpPacket->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+    // 设置 RTMP 包长度
+    rtmpPacket->m_nBodySize = rtmpPackagesize;
+    // 分配 RTMP 通道, 随意分配
+    rtmpPacket->m_nChannel = 10;
+    // 设置视频时间戳, 如果是 SPP PPS 数据, 没有时间戳
+    rtmpPacket->m_nTimeStamp = 0;
+    // 设置绝对时间, 对于 SPS PPS 赋值 0 即可
+    rtmpPacket->m_hasAbsTimestamp = 0;
+    // 设置头类型, 随意设置一个
+    rtmpPacket->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
 }
