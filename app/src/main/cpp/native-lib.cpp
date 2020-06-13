@@ -61,8 +61,11 @@ void releaseRTMPPackets(RTMPPacket * & rtmpPacket){
  * 将该封装好的 RTMPPacket 数据包放入线程安全队列中
  * typedef void (*RTMPPacketPackUpCallBack)(RTMPPacket* packet);
  */
-void RTMPPacketPackUpCallBack(RTMPPacket* packet){
-
+void RTMPPacketPackUpCallBack(RTMPPacket* rtmpPacket){
+    if (rtmpPacket) {
+        rtmpPacket->m_nTimeStamp = RTMP_GetTime() - pushStartTime;
+        packets.push(rtmpPacket);
+    }
 }
 
 extern "C"

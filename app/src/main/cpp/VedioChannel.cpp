@@ -190,8 +190,6 @@ void VedioChannel::setVideoEncoderParameters(int width, int height, int fps, int
     x264VedioCodec = x264_encoder_open(&x264Param);
 
 
-
-
     // 解锁, 设置视频编码参数 与 编码互斥
     pthread_mutex_unlock(&mMutex);
 }
@@ -267,6 +265,15 @@ void VedioChannel::encodeCameraData(int8_t *data) {
     uint8_t pps[100];
 
     /*
+        pp_nal[i].p_payload 数据时编码后的数据, 前四位默认是 00 00 00 01
+        pp_nal[i].i_payload 是编码后的数据大小, 这个大小包括前 4 位的 00 00 00 01 数据
+            一般情况下, 是要将前四位数据扣除, pp_nal[i].i_payload - 4
+
+        pp_nal[i].p_payload 是 x264 编码后的数据
+        pp_nal[i].i_payload 是 x264 编码后的数据长度
+        根据上述两个数据封装 RTMP 数据包
+        封装好之后, 将 RTMP 数据包推流到服务器中
+
         帧数据的长度为 pp_nal[i].i_payload - 4 原理
         每个帧开始的位置是 4 字节的分隔符
         第 0, 1, 2, 3 四字节是 00 00 00 01 数据
@@ -279,16 +286,25 @@ void VedioChannel::encodeCameraData(int8_t *data) {
      */
     for(int i = 0; i < pi_nal; i ++){
         if(pp_nal[i].i_type == NAL_SPS){
+            // 4 字节分隔符是 x264 编码后生成的 H.264 数据中的数据, 这里需要剔除该数据
             spsLen = pp_nal[i].i_payload - 4;
+            // 拷贝 H.264 数据时, 需要越过 4 字节 间隔数据
             memcpy(sps, pp_nal[i].p_payload + 4, spsLen);
 
         }else if(pp_nal[i].i_type == NAL_PPS){
+            // 4 字节分隔符是 x264 编码后生成的 H.264 数据中的数据, 这里需要剔除该数据
             ppsLen = pp_nal[i].i_payload - 4;
+            // 拷贝 H.264 数据时, 需要越过 4 字节 间隔数据
             memcpy(pps, pp_nal[i].p_payload + 4, ppsLen);
 
             // 向 RTMP 服务器端发送 SPS 和 PPS 数据
             // 发送时机是关键帧编码完成之后
             sendSpsPpsToRtmpServer(sps, pps, spsLen, ppsLen);
+        }else {
+            // 封装关键帧 ( I 帧 ) , 非关键帧 ( P 帧 ) , 没有设置 B 帧, 因此这里没有 B 帧
+            // pp_nal[i].i_payload 表示数据帧大小
+            // pp_nal[i].p_payload 存放数据帧数据
+            sendFrameToRtmpServer(pp_nal[i].i_type, pp_nal[i].i_payload, pp_nal[i].p_payload);
         }
     }
 
@@ -324,6 +340,7 @@ void VedioChannel::sendSpsPpsToRtmpServer(uint8_t *sps, uint8_t *pps, int spsLen
         01 版本信息, 1 字节
         64 00 32 编码规则, 3 字节
         FF NALU 长度, 1 字节
+
         E1 SPS 个数, 1 字节
         00 19 SPS 长度, 2 字节
 
@@ -417,4 +434,90 @@ void VedioChannel::sendSpsPpsToRtmpServer(uint8_t *sps, uint8_t *pps, int spsLen
     rtmpPacket->m_hasAbsTimestamp = 0;
     // 设置头类型, 随意设置一个
     rtmpPacket->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+
+    // 调用回调接口, 将该封装好的 RTMPPacket 数据包放入 native-lib 类中的 线程安全队列中
+    // 这是个 RTMPPacketPackUpCallBack 类型的函数指针
+    rtmpPacketPackUpCallBack(rtmpPacket);
+}
+
+/**
+ * 封装视频帧 , 关键帧 和 非关键帧
+ * @param type  视频帧类型
+ * @param payload   视频帧大小
+ * @param p_payload 视频帧数据
+ */
+void VedioChannel::sendFrameToRtmpServer(int type, int payload, uint8_t *p_payload) {
+    // 判定分隔符是 00 00 00 01 还是 00 00 01
+    // 根据 第 2 位 的值判定
+    // 如果 第 2 位 值为 01, 说明分隔符是 00 00 01
+    // 如果 第 2 位 值为 00, 说明分隔符是 00 00 00 01
+    if (p_payload[2] == 0x00){
+        // 识别出分隔符是 00 00 00 01
+        // 要将 x264 编码出的数据个数减去 4, 只统计实际的数据帧个数
+        payload -= 4;
+        // 从 x264 编码后的数据向外拿数据时, 越过开始的 00 00 00 01 数据
+        p_payload += 4;
+    } else if(p_payload[2] == 0x01){
+        // 识别出分隔符是 00 00 01
+        // 要将 x264 编码出的数据个数减去 3, 只统计实际的数据帧个数
+        payload -= 3;
+        // 从 x264 编码后的数据向外拿数据时, 越过开始的 00 00 01 数据
+        p_payload += 3;
+    }
+
+    // 创建 RTMP 数据包
+    RTMPPacket *rtmpPacket = new RTMPPacket;
+
+    /*
+        计算 RTMP 数据包大小
+
+        帧类型 : 1 字节, 关键帧 17, 非关键帧 27
+        包类型 : 1 字节, 1 表示数据帧 ( 关键帧 / 非关键帧 ), 0 表示 AVC 序列头
+        合成时间 : 3 字节, 设置 00 00 00
+        数据长度 : 4 字节, 赋值 payload 代表的数据长度
+
+     */
+    int rtmpPackagesize = 9 + payload;
+
+    // 为 RTMP 数据包分配内存
+    RTMPPacket_Alloc(rtmpPacket, rtmpPackagesize);
+    // 重置 RTMP 数据包
+    RTMPPacket_Reset(rtmpPacket);
+
+    // 设置帧类型, 非关键帧类型 27, 关键帧类型 17
+    rtmpPacket->m_body[0] = 0x27;
+    if (type == NAL_SLICE_IDR) {
+        rtmpPacket->m_body[0] = 0x17;
+    }
+
+    // 设置包类型, 01 是数据帧, 00 是 AVC 序列头封装 SPS PPS 数据
+    rtmpPacket->m_body[1] = 0x01;
+    // 合成时间戳, AVC 数据直接赋值 00 00 00
+    rtmpPacket->m_body[2] = 0x00;
+    rtmpPacket->m_body[3] = 0x00;
+    rtmpPacket->m_body[4] = 0x00;
+
+    // 数据长度, 需要使用 4 位表示
+    rtmpPacket->m_body[5] = (payload >> 24) & 0xFF;
+    rtmpPacket->m_body[6] = (payload >> 16) & 0xFF;
+    rtmpPacket->m_body[7] = (payload >> 8) & 0xFF;
+    rtmpPacket->m_body[8] = (payload) & 0xFF;
+
+    // H.264 数据帧数据
+    memcpy(&rtmpPacket->m_body[9], p_payload, payload);
+
+    // 设置 RTMP 包类型, 视频类型数据
+    rtmpPacket->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+    // 设置 RTMP 包长度
+    rtmpPacket->m_nBodySize = rtmpPackagesize;
+    // 分配 RTMP 通道, 随意分配
+    rtmpPacket->m_nChannel = 10;
+    // 设置绝对时间, 对于 SPS PPS 赋值 0 即可
+    rtmpPacket->m_hasAbsTimestamp = 0;
+    // 设置头类型, 随意设置一个
+    rtmpPacket->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+
+    // 调用回调接口, 将该封装好的 RTMPPacket 数据包放入 native-lib 类中的 线程安全队列中
+    // 这是个 RTMPPacketPackUpCallBack 类型的函数指针
+    rtmpPacketPackUpCallBack(rtmpPacket);
 }

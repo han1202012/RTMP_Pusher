@@ -121,6 +121,8 @@ private:
      * @param ppsLen PPS 长度
      */
     void sendSpsPpsToRtmpServer(uint8_t *sps, uint8_t *pps, int spsLen, int ppsLen);
+
+    void sendFrameToRtmpServer(int type, int payload, uint8_t *p_payload);
 };
 
 
