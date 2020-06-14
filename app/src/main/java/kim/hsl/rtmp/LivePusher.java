@@ -19,6 +19,11 @@ public class LivePusher {
     private VideoChannel mVideoChannel;
 
     /**
+     * 是否已经开启过直播, 使用该变量, 控制开启直播的方法只调用一次
+     */
+    private boolean mIsStartLive = false;
+
+    /**
      * 创建直播推流器
      * @param activity
      *          初始化推流功能的界面
@@ -36,7 +41,7 @@ public class LivePusher {
     public LivePusher(Activity activity, int width, int height, int bitrate,
                       int fps, int cameraId) {
         // 初始化 native 层的环境
-        //native_init();
+        native_init();
         // 初始化视频处理通道
         mVideoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
         // 初始化音频处理通道
@@ -51,16 +56,33 @@ public class LivePusher {
         mVideoChannel.setPreviewDisplay(surfaceHolder);
     }
 
+    /**
+     * 调用该方法可以切换摄像头
+     */
     public void switchCamera() {
         mVideoChannel.switchCamera();
     }
 
-    public void startLive(String path) {
-        native_startRtmpPush(path);
+    /**
+     * 调用该方法 , 就会启动推流过程
+     */
+    public void startLive(String rtmpPushPath) {
+        if(mIsStartLive){
+            // 如果直播已经开启过, 那么该方法就不再调用
+            return;
+        }else{
+            // 如果直播没有开启, 点击开启, 并设置标志, 表明直播已经开启
+            mIsStartLive = true;
+        }
+
+        native_startRtmpPush(rtmpPushPath);
         mVideoChannel.startLive();
         mAudioChannel.startLive();
     }
 
+    /**
+     * 停止推流方法
+     */
     public void stopLive(){
         mVideoChannel.stopLive();
         mAudioChannel.stopLive();

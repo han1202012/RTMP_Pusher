@@ -24,7 +24,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     /**
      * 当前是否在直播
      */
-    private boolean mIsLiving;
+    private boolean mIsLiving = true;
 
     public VideoChannel(LivePusher livePusher, Activity activity, int width, int height, int bitrate, int fps, int cameraId) {
         mLivePusher = livePusher;

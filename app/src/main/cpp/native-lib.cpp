@@ -258,7 +258,7 @@ JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1encodeCameraData(JNIEnv *env, jobject thiz, jbyteArray data) {
     if(!vedioChannel || !readyForPush){
         // 如果 vedioChannel 还没有进行初始化, 推流没有准备好了, 直接 return
-        __android_log_print(ANDROID_LOG_INFO, "RTMP", "还没有准备完毕, 稍后再尝试调用该方法");
+        __android_log_print(ANDROID_LOG_INFO, "RTMP", "还没有准备完毕, 稍后再尝试调用该方法 %d, %d", vedioChannel, readyForPush);
         return;
     }
 

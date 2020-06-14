@@ -232,6 +232,7 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
 
         // 设置相关的回调接口
         // 在 mSurfaceHolder 对应的组件创建, 画布大小改变, 销毁时, 回调相应的接口方法
+        // 该 SurfaceHolder.Callback 回调, 是驱动整个推流开始的接口
         mSurfaceHolder.addCallback(this);
     }
 
