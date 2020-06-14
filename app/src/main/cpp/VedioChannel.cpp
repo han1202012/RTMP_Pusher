@@ -1,11 +1,7 @@
 //
 // Created by octopus on 2020/6/12.
 //
-
-#include <x264.h>
-#include <cstring>
 #include "VedioChannel.h"
-#include "librtmp/rtmp.h"
 
 /**
  * 构造方法
