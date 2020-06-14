@@ -2,8 +2,6 @@
 #include <android/log.h>
 #include <string>
 #include "librtmp/rtmp.h"
-#include <x264.h>
-
 #include "SafeQueue.h"
 #include "VedioChannel.h"
 
@@ -192,7 +190,6 @@ void* startRtmpPush (void* args){
                 break;
             }
         }
-
     }while (0);
 
 
