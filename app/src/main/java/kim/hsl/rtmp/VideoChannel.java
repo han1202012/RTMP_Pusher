@@ -1,10 +1,8 @@
-package kim.hsl.rtmp.channel;
+package kim.hsl.rtmp;
 
 import android.app.Activity;
 import android.hardware.Camera;
 import android.view.SurfaceHolder;
-
-import kim.hsl.rtmp.LivePusher;
 
 
 public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnChangedSizeListener {

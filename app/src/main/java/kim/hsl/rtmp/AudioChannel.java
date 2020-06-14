@@ -1,4 +1,4 @@
-package kim.hsl.rtmp.channel;
+package kim.hsl.rtmp;
 
 public class AudioChannel {
     public void stopLive() {

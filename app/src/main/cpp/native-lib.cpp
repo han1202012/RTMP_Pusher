@@ -278,3 +278,14 @@ Java_kim_hsl_rtmp_LivePusher_native_1encodeCameraData(JNIEnv *env, jobject thiz,
 }
 
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1stopPush(JNIEnv *env, jobject thiz) {
+    // TODO: implement native_stopPush()
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1release(JNIEnv *env, jobject thiz) {
+    // TODO: implement native_release()
+}

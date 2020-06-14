@@ -1,4 +1,4 @@
-package kim.hsl.rtmp.channel;
+package kim.hsl.rtmp;
 
 import android.app.Activity;
 import android.graphics.ImageFormat;

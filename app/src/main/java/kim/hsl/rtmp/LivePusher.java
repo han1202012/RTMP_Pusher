@@ -3,9 +3,6 @@ package kim.hsl.rtmp;
 import android.app.Activity;
 import android.view.SurfaceHolder;
 
-import kim.hsl.rtmp.channel.AudioChannel;
-import kim.hsl.rtmp.channel.VideoChannel;
-
 public class LivePusher {
     static {
         System.loadLibrary("native-lib");
@@ -67,7 +64,7 @@ public class LivePusher {
     public void stopLive(){
         mVideoChannel.stopLive();
         mAudioChannel.stopLive();
-        native_stop();
+        native_stopPush();
     }
 
 
@@ -102,7 +99,7 @@ public class LivePusher {
      */
     public native void native_encodeCameraData(byte[] data);
 
-    public native void native_stop();
+    public native void native_stopPush();
 
     public native void native_release();
 }
