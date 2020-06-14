@@ -73,8 +73,11 @@ Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     //    使用该工具类, 对数据进行编码
     vedioChannel = new VedioChannel;
 
+    // 2. 设置 封装 RTMPPacket 包完成回调函数
+    // 通过该回调函数, 将封装好的 RTMP 包放入 SafeQueue<RTMPPacket *> packets 队列中
+    vedioChannel->setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack);
 
-    // 1. 数据队列, 用于存储打包好的数据
+    // 3. 数据队列, 用于存储打包好的数据
     //    在单独的线程中将该队列中的数据发送给服务器
     packets.setReleaseHandle(releaseRTMPPackets);
 }
@@ -157,10 +160,13 @@ void* startRtmpPush (void* args){
         // 线程安全队列开始工作
         packets.setWork(1);
 
+        __android_log_print(ANDROID_LOG_INFO, "RTMP", "开始直播, 推流地址 %s", pushPath);
         while (isStartRtmpPush) {
             // 从线程安全队列中
             // 取出一包已经打包好的 RTMP 数据包
+            __android_log_print(ANDROID_LOG_INFO, "RTMP", "从 packets 取出数据 开始 %d", packets.size());
             packets.pop(packet);
+            __android_log_print(ANDROID_LOG_INFO, "RTMP", "从 packets 取出数据 结束 %d", packets.size());
 
             // 确保当前处于推流状态
             if (!isStartRtmpPush) {
