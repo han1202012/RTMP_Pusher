@@ -132,11 +132,47 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     private void setCameraPreviewOrientation(Camera.Parameters parameters) {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(mCameraFacing, info);
+
+        /*
+            获取屏幕相对于自然方向的角度
+            自然方向就是正常的竖屏方向, 摄像头在上, Home 键在下, 对应 Surface.ROTATION_0
+
+            ROTATION_0 是自然方向逆时针旋转 0 度, 竖屏
+            头部 ( 摄像头的一边 ) 在上边
+            尾部 ( Home / 返回 键的一边 ) 在下边
+            一般竖屏操作方式, 也是最常用的方式
+
+            ROTATION_90 是自然方向逆时针旋转 90 度, 横屏
+            头部 ( 摄像头的一边 ) 在左边
+            尾部 ( Home / 返回 键的一边 ) 在右边
+            一般横屏操作方式
+
+            ROTATION_180 是自然方向逆时针旋转 180 度, 竖屏
+            头部 ( 摄像头的一边 ) 在下边
+            尾部 ( Home / 返回 键的一边 ) 在上边
+            一般很少这样操作
+
+            ROTATION_270 是自然方向逆时针旋转 270 度, 横屏
+            头部 ( 摄像头的一边 ) 在右边
+            尾部 ( Home / 返回 键的一边 ) 在左边
+            一般很少这样操作
+
+            博客中配合截图说明这些方向
+         */
         mRotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
+
         int degrees = 0;
         switch (mRotation) {
             case Surface.ROTATION_0:
                 degrees = 0;
+                /*
+                    Camera 图像传感器采集的数据是按照竖屏采集的
+                    原来设置的图像的宽高是 800 x 400
+                    如果屏幕竖过来, 其宽高就变成 400 x 800, 宽高需要交换一下
+                    这里需要通知 Native 层的 x264 编码器, 修改编码参数 , 按照 400 x 800 的尺寸进行编码
+                    需要重新设置 x264 的编码参数
+                 */
+                mOnChangedSizeListener.onChanged(mHeight, mWidth);
                 break;
             case Surface.ROTATION_90:
                 degrees = 90;
@@ -266,8 +302,19 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     }
 
 
+    /**
+     * Camera 图像传感器采集图像数据回调函数
+     * @param data
+     *          Camera 采集的图像数据, NV21 格式
+     * @param camera
+     *          Camera 摄像头
+     */
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
+        // 处理 NV21 数据旋转问题
+
+
+
         // 此时 NV21 数据是颠倒的
         mPreviewCallback.onPreviewFrame(data, camera);
         camera.addCallbackBuffer(mNv21DataBuffer);
