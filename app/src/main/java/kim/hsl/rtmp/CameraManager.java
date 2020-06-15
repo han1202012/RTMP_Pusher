@@ -370,8 +370,8 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
             /*
                 读取 Y 灰度数据
                 顺时针旋转 90 度
-                外层循环 : 逐行遍历, 从第一行遍历到最后一行
-                内存循环 : 遍历每一行时, 从底部遍历到顶部
+                外层循环 : 逐行遍历, 从第一行遍历到最后一行, 从 0 到 mWidth - 1
+                内存循环 : 遍历每一行时, 从底部遍历到顶部, 从 mHeight - 1 到 0
              */
             for (int i = 0; i < mWidth; i++) {
                 // 第 i 行, 从每一列的最后一个像素 ( 索引 mHeight - 1 ) 遍历到第一个像素 ( 索引 0 )
