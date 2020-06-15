@@ -49,9 +49,26 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
      * Camera 预览数据 NV21 格式
      */
     private byte[] mNv21DataBuffer;
+
+    /**
+     * 画面显示画布 Holder
+     */
     private SurfaceHolder mSurfaceHolder;
+
+    /**
+     * 回调接口
+     */
     private Camera.PreviewCallback mPreviewCallback;
-    private int mRotation;
+
+    /**
+     * 屏幕旋转角度
+     */
+    private int mScreenRotation;
+
+    /**
+     * 屏幕大小改变回调接口
+     * 通过该回调接口, 设置 JNI 层 x264 编码 H.264 的参数
+     */
     private OnChangedSizeListener mOnChangedSizeListener;
 
     public CameraManager(Activity activity, int cameraId, int width, int height) {
@@ -159,10 +176,10 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
 
             博客中配合截图说明这些方向
          */
-        mRotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
+        mScreenRotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
 
         int degrees = 0;
-        switch (mRotation) {
+        switch (mScreenRotation) {
             case Surface.ROTATION_0:
                 degrees = 0;
                 /*
@@ -176,11 +193,14 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                 break;
             case Surface.ROTATION_90:
                 degrees = 90;
+                mOnChangedSizeListener.onChanged(mWidth, mHeight);
                 break;
             case Surface.ROTATION_180:
                 degrees = 180;
+                mOnChangedSizeListener.onChanged(mHeight, mWidth);
                 break;
             case Surface.ROTATION_270:
+                mOnChangedSizeListener.onChanged(mWidth, mHeight);
                 degrees = 270;
                 break;
         }
@@ -312,12 +332,138 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     @Override
     public void onPreviewFrame(byte[] data, Camera camera) {
         // 处理 NV21 数据旋转问题
-
-
+        if(mScreenRotation == Surface.ROTATION_0){
+            nv21PictureDataClockwiseRotation90(data);
+        }
 
         // 此时 NV21 数据是颠倒的
         mPreviewCallback.onPreviewFrame(data, camera);
         camera.addCallbackBuffer(mNv21DataBuffer);
+    }
+
+    /**
+     * 将 NV21 格式的图片数据顺时针旋转 90 度
+     * 后置摄像头顺时针旋转 90 度
+     * 前置摄像头逆时针旋转 90 度
+     * @param data
+     */
+    private void nv21PictureDataClockwiseRotation90(byte[] data){
+        // Y 灰度数据的个数
+        int YByteCount = mWidth * mHeight;
+
+        // 色彩度 U, 饱和度 V 数据高度
+        int UVByteHeight = mHeight / 2;
+
+        // 色彩度 U, 饱和度 V 数据个数
+        int UVByteCount = YByteCount / 4;
+
+        // 数据处理索引值, 用于记录写入到 mNv21DataBuffer 中的元素个数
+        // 及下一个将要写入的元素的索引
+        int positionIndex = 0;
+
+        /*
+            后置摄像头处理
+            后置摄像头需要将图像顺时针旋转 90 度
+         */
+        if(mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK){
+
+            /*
+                读取 Y 灰度数据
+                顺时针旋转 90 度
+                外层循环 : 逐行遍历, 从第一行遍历到最后一行
+                内存循环 : 遍历每一行时, 从底部遍历到顶部
+             */
+            for (int i = 0; i < mWidth; i++) {
+                // 第 i 行, 从每一列的最后一个像素 ( 索引 mHeight - 1 ) 遍历到第一个像素 ( 索引 0 )
+                for (int j = mHeight - 1; j >= 0; j--) {
+                    // 将读取到的 Y 灰度值存储到 mNv21DataBuffer 缓冲区中
+                    mNv21DataBuffer[positionIndex++] = data[mWidth * j + i];
+                }
+            }
+
+            /*
+                读取 UV 数据
+
+                Y 数据的高度与图像高度相等
+                UV 数据高度相当于 Y 数据高度的一半
+
+                UV 数据排列 : V 色彩值在前, U 饱和度在后, UV 数据交替排列
+                UV 数据交替排列, 一行 mWidth 中, 排布了 mWidth / 2 组 UV 数据
+
+                UV 数据组有 mWidth / 2 行, mHeight / 2 列, 因此遍历时, 有如下规则 :
+                按照行遍历 : 遍历 mWidth / 2 次
+                按照列遍历 : 遍历 mHeight / 2 次
+
+                外层遍历 : 遍历行从 0 到 mWidth / 2
+                外层按照行遍历时, 每隔 2 行, 遍历一次, 遍历 mWidth / 2 次
+
+                内层遍历时 : 遍历列, 从 mHeight / 2 - 1 遍历到 0
+                UV 数据也需要倒着读 , 从 mHeight / 2 - 1 遍历到 0
+             */
+            for (int i = 0; i < mWidth / 2; i ++) {
+                for (int j = UVByteHeight - 1; j >= 0; j--) {
+                    // 读取数据时, 要从 YByteCount 之后的数据开始遍历
+                    // 使用 mWidth 和 UVByteHeight 定位要遍历的位置
+                    // 拷贝 V 色彩值数据
+                    mNv21DataBuffer[positionIndex++] = data[YByteCount + mWidth / 2 * 2 * j + i];
+                    // 拷贝 U 饱和度数据
+                    mNv21DataBuffer[positionIndex++] = data[YByteCount + mWidth / 2 * 2 * j + i + 1];
+                }
+            }
+
+
+        }else if(mCameraFacing == Camera.CameraInfo.CAMERA_FACING_FRONT){
+            /*
+                前置摄像头处理
+                前置摄像头与后置摄像头相反, 后置摄像头顺时针旋转 90 度
+                前置摄像头需要将图像逆时针旋转 90 度
+             */
+
+            /*
+                读取 Y 灰度数据
+                逆时针旋转 90 度
+                外层循环 : 逐行遍历, 从最后一行遍历到第一行, 从 mWidth - 1 到 0
+                内存循环 : 遍历第 i 行时, 从顶部遍历到底部, 从 0 到 mHeight - 1
+             */
+            for (int i = mWidth - 1; i >= 0; i--) {
+                // 第 i 行, 从每一列的最后一个像素 ( 索引 mHeight - 1 ) 遍历到第一个像素 ( 索引 0 )
+                for (int j = 0; j < mHeight; j++) {
+                    // 将读取到的 Y 灰度值存储到 mNv21DataBuffer 缓冲区中
+                    mNv21DataBuffer[positionIndex++] = data[mWidth * j + i];
+                }
+            }
+
+            /*
+                读取 UV 数据
+
+                Y 数据的高度与图像高度相等
+                UV 数据高度相当于 Y 数据高度的一半
+
+                UV 数据排列 : V 色彩值在前, U 饱和度在后, UV 数据交替排列
+                UV 数据交替排列, 一行 mWidth 中, 排布了 mWidth / 2 组 UV 数据
+
+                UV 数据组有 mWidth / 2 行, mHeight / 2 列, 因此遍历时, 有如下规则 :
+                按照行遍历 : 遍历 mWidth / 2 次
+                按照列遍历 : 遍历 mHeight / 2 次
+
+                外层遍历 : 遍历行从 mWidth / 2 - 1 到 0
+                外层按照行遍历时, 每隔 2 行, 遍历一次, 遍历 mWidth / 2 次
+
+                内层遍历时 : 遍历列, 从 0 遍历到 mHeight / 2 - 1
+                UV 数据也需要倒着读 , 从 0 遍历到 mHeight / 2 - 1
+             */
+            for (int i = mWidth / 2 - 1; i >= 0 ; i --) {
+                for (int j = 0; j < UVByteHeight; j++) {
+                    // 读取数据时, 要从 YByteCount 之后的数据开始遍历
+                    // 使用 mWidth 和 UVByteHeight 定位要遍历的位置
+                    // 拷贝 V 色彩值数据
+                    mNv21DataBuffer[positionIndex++] = data[YByteCount + mWidth / 2 * 2 * j + i];
+                    // 拷贝 U 饱和度数据
+                    mNv21DataBuffer[positionIndex++] = data[YByteCount + mWidth / 2 * 2 * j + i + 1];
+                }
+            }
+
+        }
     }
 
 
