@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 // rtmp://47.94.36.51/myapp/0
                 // 0 相当于 直播的 密码
                 // 配置好服务器后, 记录 IP 地址, 替换 47.94.36.51 IP 地址
-                mLivePusher.startLive("rtmp://47.94.36.51/myapp/0");
+                mLivePusher.startLive("rtmp://47.94.36.51/myapp/mystream");
             }
         });
 
