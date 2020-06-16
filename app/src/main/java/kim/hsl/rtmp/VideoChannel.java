@@ -9,7 +9,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
 
 
     private LivePusher mLivePusher;
-    private CameraManager mCameraHelper;
+    private CameraManager mCameraManager;
 
     /**
      * 视频码率
@@ -32,14 +32,14 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
         mFps = fps;
 
         // 1. 初始化 Camera 相关参数
-        mCameraHelper = new CameraManager(activity, cameraId, width, height);
+        mCameraManager = new CameraManager(activity, cameraId, width, height);
         // 2. 设置 Camera 预览数据回调接口
         //    通过该接口可以在本类中的实现的 onPreviewFrame 方法中
         //    获取到 NV21 数据
-        mCameraHelper.setPreviewCallback(this);
+        mCameraManager.setPreviewCallback(this);
         // 3. 通过该回调接口, 可以获取到真实的 Camera 尺寸数据
         //    设置摄像头预览尺寸完成后, 会回调该接口
-        mCameraHelper.setOnChangedSizeListener(this);
+        mCameraManager.setOnChangedSizeListener(this);
     }
 
     /**
@@ -47,7 +47,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
      * @param surfaceHolder
      */
     public void setPreviewDisplay(SurfaceHolder surfaceHolder) {
-        mCameraHelper.setPreviewDisplay(surfaceHolder);
+        mCameraManager.setPreviewDisplay(surfaceHolder);
     }
 
 
@@ -65,7 +65,7 @@ public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnCha
     }
 
     public void switchCamera() {
-        mCameraHelper.switchCamera();
+        mCameraManager.switchCamera();
     }
 
     /**

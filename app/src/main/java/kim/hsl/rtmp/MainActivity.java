@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 创建直播推流器, 用于将采集的视频数据推流到服务器端
         // 800_000 代表 800K 的码率
-        mLivePusher = new LivePusher(this, 800, 480, 800_000, 10, Camera.CameraInfo.CAMERA_FACING_BACK);
+        mLivePusher = new LivePusher(this, 640, 480, 800_000, 10, Camera.CameraInfo.CAMERA_FACING_BACK);
 
         // 设置 Camera 采集的图像本地预览的组件, 在 mSurfaceView 界面先绘制摄像头
         // 此处要为 SurfaceHolder 设置 SurfaceHolder.Callback 回调 , 通过里面的回调函数
@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 // rtmp://47.94.36.51/myapp/0
                 // 0 相当于 直播的 密码
                 // 配置好服务器后, 记录 IP 地址, 替换 47.94.36.51 IP 地址
-                mLivePusher.startLive("rtmp://47.94.36.51/myapp/mystream");
+                mLivePusher.startLive("rtmp://59.110.116.214/myapp/mystream");
             }
         });
 

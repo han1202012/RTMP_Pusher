@@ -48,6 +48,11 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     /**
      * Camera 预览数据 NV21 格式
      */
+    private byte[] mNv21DataPreviewBuffer;
+
+    /**
+     * 存储实际向 JNI 层传输的数据
+     */
     private byte[] mNv21DataBuffer;
 
     /**
@@ -123,9 +128,10 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
             setCameraPreviewOrientation(parameters);
             mCamera.setParameters(parameters);
             // 6. 计算出 NV21 格式图像 mWidth * mHeight 像素数据大小
+            mNv21DataPreviewBuffer = new byte[mWidth * mHeight * 3 / 2];
             mNv21DataBuffer = new byte[mWidth * mHeight * 3 / 2];
             // 7. 设置 Camera 预览数据缓存区
-            mCamera.addCallbackBuffer(mNv21DataBuffer);
+            mCamera.addCallbackBuffer(mNv21DataPreviewBuffer);
             // 8. 设置 Camera 数据采集回调函数, 采集完数据后
             //    就会回调此 PreviewCallback 接口的
             //    void onPreviewFrame(byte[] data, Camera camera) 方法
@@ -190,14 +196,16 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                     需要重新设置 x264 的编码参数
                  */
                 mOnChangedSizeListener.onChanged(mHeight, mWidth);
+                //mOnChangedSizeListener.onChanged(mWidth, mHeight);
                 break;
             case Surface.ROTATION_90:
                 degrees = 90;
                 mOnChangedSizeListener.onChanged(mWidth, mHeight);
                 break;
             case Surface.ROTATION_180:
-                degrees = 180;
-                mOnChangedSizeListener.onChanged(mHeight, mWidth);
+                //degrees = 180;
+                //mOnChangedSizeListener.onChanged(mHeight, mWidth);
+                //mOnChangedSizeListener.onChanged(mWidth, mHeight);
                 break;
             case Surface.ROTATION_270:
                 mOnChangedSizeListener.onChanged(mWidth, mHeight);
@@ -333,12 +341,16 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
     public void onPreviewFrame(byte[] data, Camera camera) {
         // 处理 NV21 数据旋转问题
         if(mScreenRotation == Surface.ROTATION_0){
+            // 获取到数据后, 先将数据旋转, 然后再处理下面的内容
             nv21PictureDataClockwiseRotation90(data);
+        }else{
+            mNv21DataBuffer = data;
         }
 
-        // 此时 NV21 数据是颠倒的
-        mPreviewCallback.onPreviewFrame(data, camera);
-        camera.addCallbackBuffer(mNv21DataBuffer);
+        // 此时经过 nv21PictureDataClockwiseRotation90 方法处理后 NV21 数据图像方向是正的
+        // 通过该回调函数, 将旋转后的画面传递到 JNI 层
+        mPreviewCallback.onPreviewFrame(mNv21DataBuffer, camera);
+        camera.addCallbackBuffer(mNv21DataPreviewBuffer);
     }
 
     /**
@@ -373,7 +385,7 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                 外层循环 : 逐行遍历, 从第一行遍历到最后一行, 从 0 到 mWidth - 1
                 内存循环 : 遍历每一行时, 从底部遍历到顶部, 从 mHeight - 1 到 0
              */
-            for (int i = 0; i < mWidth; i++) {
+            for (int i = 0; i <= mWidth - 1; i++) {
                 // 第 i 行, 从每一列的最后一个像素 ( 索引 mHeight - 1 ) 遍历到第一个像素 ( 索引 0 )
                 for (int j = mHeight - 1; j >= 0; j--) {
                     // 将读取到的 Y 灰度值存储到 mNv21DataBuffer 缓冲区中
@@ -400,7 +412,7 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                 内层遍历时 : 遍历列, 从 mHeight / 2 - 1 遍历到 0
                 UV 数据也需要倒着读 , 从 mHeight / 2 - 1 遍历到 0
              */
-            for (int i = 0; i < mWidth / 2; i ++) {
+            for (int i = 0; i <= mWidth / 2 - 1; i ++) {
                 for (int j = UVByteHeight - 1; j >= 0; j--) {
                     // 读取数据时, 要从 YByteCount 之后的数据开始遍历
                     // 使用 mWidth 和 UVByteHeight 定位要遍历的位置
@@ -410,7 +422,6 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                     mNv21DataBuffer[positionIndex++] = data[YByteCount + mWidth / 2 * 2 * j + i + 1];
                 }
             }
-
 
         }else if(mCameraFacing == Camera.CameraInfo.CAMERA_FACING_FRONT){
             /*
@@ -453,7 +464,7 @@ public class CameraManager implements SurfaceHolder.Callback, Camera.PreviewCall
                 UV 数据也需要倒着读 , 从 0 遍历到 mHeight / 2 - 1
              */
             for (int i = mWidth / 2 - 1; i >= 0 ; i --) {
-                for (int j = 0; j < UVByteHeight; j++) {
+                for (int j = 0; j <= UVByteHeight - 1; j++) {
                     // 读取数据时, 要从 YByteCount 之后的数据开始遍历
                     // 使用 mWidth 和 UVByteHeight 定位要遍历的位置
                     // 拷贝 V 色彩值数据
