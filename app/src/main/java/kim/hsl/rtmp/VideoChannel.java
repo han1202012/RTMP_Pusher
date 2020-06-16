@@ -4,11 +4,21 @@ import android.app.Activity;
 import android.hardware.Camera;
 import android.view.SurfaceHolder;
 
-
+/**
+ * 处理视频通道数据
+ * 主要管理直播推流器 LivePusher 和 Camera 摄像头管理对象 CameraManager
+ */
 public class VideoChannel implements Camera.PreviewCallback, CameraManager.OnChangedSizeListener {
 
 
+    /**
+     * 直播推流器
+     */
     private LivePusher mLivePusher;
+
+    /**
+     * Camera 摄像头管理对象
+     */
     private CameraManager mCameraManager;
 
     /**
