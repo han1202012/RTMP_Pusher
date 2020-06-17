@@ -32,7 +32,9 @@ target_link_libraries( # 链接动态库
 
                        # 编译的 rtmp 静态库
                        rtmp
-                       # 预编译的 x264 静态库
+                       # 查找到的 x264 静态库
                        x264
+                       # 查找到的 faac 静态库
+                       faac
 
                        ${log-lib} )

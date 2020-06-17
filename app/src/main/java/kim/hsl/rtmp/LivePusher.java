@@ -45,7 +45,7 @@ public class LivePusher {
         // 初始化视频处理通道
         mVideoChannel = new VideoChannel(this, activity, width, height, bitrate, fps, cameraId);
         // 初始化音频处理通道
-        mAudioChannel = new AudioChannel();
+        mAudioChannel = new AudioChannel(this);
     }
 
     /**
@@ -120,6 +120,16 @@ public class LivePusher {
      * @param data
      */
     public native void native_encodeCameraData(byte[] data);
+
+
+    /**
+     * 设置音频编码参数
+     * @param sampleRateInHz    采样率
+     * @param channelConfig     声道数
+     */
+    public native void native_setAudioEncoderParameters(int sampleRateInHz, int channelConfig);
+
+
 
     public native void native_stopPush();
 

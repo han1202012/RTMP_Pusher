@@ -4,6 +4,7 @@
 #include "librtmp/rtmp.h"
 #include "SafeQueue.h"
 #include "VedioChannel.h"
+#include "AudioChannel.h"
 
 /**
  * RTMPPacket 结构体是打包好的 RTMP 数据包
@@ -14,7 +15,12 @@ SafeQueue<RTMPPacket *> packets;
 /**
  * 视频处理对象
  */
-VedioChannel* vedioChannel;
+VedioChannel* mVedioChannel;
+
+/**
+ * 音频处理对象
+ */
+AudioChannel* mAudioChannel;
 
 /**
  * 是否已经开始推流, 推流的重要标志位
@@ -71,11 +77,18 @@ JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     // 0. 将 x264 编码的过程, RTMPDump 的编码过程, 封装到单独的工具类中
     //    使用该工具类, 对数据进行编码
-    vedioChannel = new VedioChannel;
+    mVedioChannel = new VedioChannel;
 
     // 2. 设置 封装 RTMPPacket 包完成回调函数
     // 通过该回调函数, 将封装好的 RTMP 包放入 SafeQueue<RTMPPacket *> packets 队列中
-    vedioChannel->setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack);
+    mVedioChannel->setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack);
+
+    // 初始化音频处理器
+    mAudioChannel = new AudioChannel;
+
+    // 2. 设置 封装 RTMPPacket 包完成回调函数
+    // 通过该回调函数, 将封装好的 RTMP 包放入 SafeQueue<RTMPPacket *> packets 队列中
+    mAudioChannel->setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack);
 
     // 3. 数据队列, 用于存储打包好的数据
     //    在单独的线程中将该队列中的数据发送给服务器
@@ -91,7 +104,7 @@ JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1setVideoEncoderParameters(JNIEnv *env, jobject thiz,
                                                                jint width, jint height, jint fps,
                                                                jint bitrate) {
-    vedioChannel->setVideoEncoderParameters(width, height, fps, bitrate);
+    mVedioChannel->setVideoEncoderParameters(width, height, fps, bitrate);
 }
 
 
@@ -262,9 +275,9 @@ Java_kim_hsl_rtmp_LivePusher_native_1startRtmpPush(JNIEnv *env, jobject thiz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1encodeCameraData(JNIEnv *env, jobject thiz, jbyteArray data) {
-    if(!vedioChannel || !readyForPush){
+    if(!mVedioChannel || !readyForPush){
         // 如果 vedioChannel 还没有进行初始化, 推流没有准备好了, 直接 return
-        __android_log_print(ANDROID_LOG_INFO, "RTMP", "还没有准备完毕, 稍后再尝试调用该方法 %d, %d", vedioChannel, readyForPush);
+        __android_log_print(ANDROID_LOG_INFO, "RTMP", "还没有准备完毕, 稍后再尝试调用该方法 %d, %d", mVedioChannel, readyForPush);
         return;
     }
 
@@ -274,7 +287,7 @@ Java_kim_hsl_rtmp_LivePusher_native_1encodeCameraData(JNIEnv *env, jobject thiz,
 
     // jbyte 是 int8_t 类型的, 因此这里我们将 encodeCameraData 的参数设置成 int8_t* 类型
     // typedef int8_t   jbyte;    /* signed 8 bits */
-    vedioChannel->encodeCameraData(dataFromJava);
+    mVedioChannel->encodeCameraData(dataFromJava);
 
     // 释放局部引用变量
     env->ReleaseByteArrayElements(data, dataFromJava, 0);
@@ -290,5 +303,24 @@ Java_kim_hsl_rtmp_LivePusher_native_1stopPush(JNIEnv *env, jobject thiz) {
 extern "C"
 JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1release(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_release()
+    if(mVedioChannel){
+        delete mVedioChannel;
+        mVedioChannel = 0;
+    }
+
+    if(mAudioChannel){
+        delete mAudioChannel;
+        mAudioChannel = 0;
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1setAudioEncoderParameters(JNIEnv *env, jobject thiz,
+                                                               jint sample_rate_in_hz,
+                                                               jint channel_config) {
+
+    if(mAudioChannel){
+        mAudioChannel->setAudioEncoderParameters(sample_rate_in_hz, channel_config);
+    }
 }

@@ -4,6 +4,9 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class AudioChannel {
 
     /**
@@ -16,8 +19,21 @@ public class AudioChannel {
      */
     private AudioRecord mAudioRecord;
 
+    /**
+     * 是否已经开始推流
+     */
+    private boolean isStartPush;
+
+    /**
+     * 单线程线程池, 在该线程中进行音频采样
+     */
+    private ExecutorService mExecutorService;
+
     public AudioChannel(LivePusher mLivePusher) {
         this.mLivePusher = mLivePusher;
+
+        // 初始化线程池, 单线程线程池
+        mExecutorService = Executors.newSingleThreadExecutor();
 
         /*
             获取 44100 立体声 / 单声道 16 位采样率的最小缓冲区大小
@@ -46,9 +62,43 @@ public class AudioChannel {
                 minBufferSize);
     }
 
-    public void stopLive() {
+    /**
+     * 开始推流
+     */
+    public void startLive() {
+        isStartPush = true;
+        // 执行音频采样线程
+        // 如果在启动一个线程, 后续线程就会排队等待
+        mExecutorService.submit(new AudioSampling());
     }
 
-    public void startLive() {
+    /**
+     * 停止推流
+     */
+    public void stopLive() {
+        isStartPush = false;
+    }
+
+    public void release(){
+        //释放音频录音对象
+        mAudioRecord.release();
+    }
+
+    /**
+     * 音频采样线程
+     */
+    class AudioSampling implements Runnable{
+        @Override
+        public void run() {
+            // 开始录音采样
+            mAudioRecord.startRecording();
+
+            while (isStartPush){
+                //mAudioRecord.read();
+            }
+
+            // 停止录音采样
+            mAudioRecord.stop();
+        }
     }
 }
