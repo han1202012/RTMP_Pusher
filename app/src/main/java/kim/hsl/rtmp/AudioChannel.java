@@ -7,6 +7,10 @@ import android.media.MediaRecorder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/**
+ * 音频处理类
+ * 音频采样, 编码, 推流控制
+ */
 public class AudioChannel {
 
     /**
@@ -55,11 +59,11 @@ public class AudioChannel {
 
          */
         mAudioRecord = new AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                44100,
-                AudioFormat.CHANNEL_IN_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                minBufferSize);
+                MediaRecorder.AudioSource.MIC,  // 声音来源 麦克风
+                44100,            // PCM 音频采样率 44100 Hz
+                AudioFormat.CHANNEL_IN_STEREO,  // 立体声
+                AudioFormat.ENCODING_PCM_16BIT, // 采样位数 16 位
+                minBufferSize);                 // 最小采样缓冲区个数
     }
 
     /**
@@ -94,6 +98,7 @@ public class AudioChannel {
             mAudioRecord.startRecording();
 
             while (isStartPush){
+                // 循环读取录音
                 //mAudioRecord.read();
             }
 

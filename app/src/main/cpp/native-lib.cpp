@@ -319,7 +319,7 @@ JNIEXPORT void JNICALL
 Java_kim_hsl_rtmp_LivePusher_native_1setAudioEncoderParameters(JNIEnv *env, jobject thiz,
                                                                jint sample_rate_in_hz,
                                                                jint channel_config) {
-
+    // 设置音频参数
     if(mAudioChannel){
         mAudioChannel->setAudioEncoderParameters(sample_rate_in_hz, channel_config);
     }

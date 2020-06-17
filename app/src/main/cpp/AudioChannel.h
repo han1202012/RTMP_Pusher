@@ -5,6 +5,8 @@
 #ifndef RTMP_PUSHER_AUDIOCHANNEL_H
 #define RTMP_PUSHER_AUDIOCHANNEL_H
 
+#include <faac.h>
+
 /**
  * 音频编码器
  */
@@ -42,6 +44,29 @@ private:
      * RTMPPacket 数据包打包完毕回调函数
      */
     RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack;
+
+    /**
+     * 音频通道数
+     */
+    int mChannelConfig;
+
+    /**
+     * 输入样本个数, 需要进行编码的 PCM 音频样本个数
+     * FAAC 编码器最多一次可以接收的样本个数
+     * 传递下面两个数值的地址到 faacEncOpen 函数中, 用于当做返回值使用
+     */
+    unsigned long inputSamples;
+
+    /**
+     * FAAC 编码器最多一次可以接收的样本个数
+     * 传递下面两个数值的地址到 faacEncOpen 函数中, 用于当做返回值使用
+     */
+    unsigned long maxOutputBytes;
+
+    /**
+     * PCM 音频 FAAC 编码器
+     */
+    faacEncHandle mFaacEncHandle;
 
 };
 
