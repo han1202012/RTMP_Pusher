@@ -3,7 +3,6 @@
 //
 
 #include "AudioChannel.h"
-#include "include/faac.h"
 
 
 /**
@@ -234,9 +233,9 @@ RTMPPacket *AudioChannel::getAudioDecodeInfo() {
 
      */
     // 该指针用于接收获取的 FAAC 解码特殊信息
-    u_char *pBuffer;
+    unsigned char *pBuffer;
     // 该指针用于接收获取的 FAAC 解码特殊信息长度
-    u_long sizeOfDecoderSpecificInfo;
+    unsigned long sizeOfDecoderSpecificInfo;
     // 生成 FAAC 解码特殊信息数据
     faacEncGetDecoderSpecificInfo(mFaacEncHandle, &pBuffer, &sizeOfDecoderSpecificInfo);
 
