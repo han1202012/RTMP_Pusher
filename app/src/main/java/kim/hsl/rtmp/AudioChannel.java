@@ -14,6 +14,19 @@ import java.util.concurrent.Executors;
 public class AudioChannel {
 
     /**
+     * 44100 Hz 采样率
+     */
+    public static final int SAMPLE_RATE_IN_HZ_44100 = 44100;
+    /**
+     * 单声道
+     */
+    public static final int AUDIO_CHANNEL_MONO = 1;
+    /**
+     * 立体声
+     */
+    public static final int AUDIO_CHANNEL_STEREO = 2;
+
+    /**
      * 直播推流器
      */
     private LivePusher mLivePusher;
@@ -33,11 +46,37 @@ public class AudioChannel {
      */
     private ExecutorService mExecutorService;
 
+    /**
+     * FAAC 编码器一次可以读取的样本个数
+     */
+    private int mFaacInputSamplesCount;
+
+    /**
+     * FAAC 编码器一次可以读取的字节个数
+     * mFaacInputSamplesCount * 2
+     */
+    private int mFaacInputBytesCount;
+
+    /**
+     * 每次从
+     */
+    private int mAudioRecordReadCount;
+
     public AudioChannel(LivePusher mLivePusher) {
         this.mLivePusher = mLivePusher;
 
         // 初始化线程池, 单线程线程池
         mExecutorService = Executors.newSingleThreadExecutor();
+
+        // 调用该方法, 最终调用 JNI 层初始化 FAAC 编码器的参数
+        // 44100 立体声, 是默认选项, 就设置这个参数
+        // 后续初始化 AudioRecord 需要该设置过程中的 FAAC 编码器一次可以读取的样本个数
+        mLivePusher.native_setAudioEncoderParameters(SAMPLE_RATE_IN_HZ_44100, AUDIO_CHANNEL_STEREO);
+
+        // 获取 FAAC 编码器一次可以读取的样本个数
+        mFaacInputSamplesCount = mLivePusher.native_getInputSamples();
+        // 获取 FAAC 编码器一次可以读取的字节个数
+        mFaacInputBytesCount = mFaacInputSamplesCount * 2;
 
         /*
             获取 44100 立体声 / 单声道 16 位采样率的最小缓冲区大小
@@ -46,6 +85,29 @@ public class AudioChannel {
          */
         int minBufferSize = AudioRecord.getMinBufferSize(44100,
                 AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT) * 2;
+
+
+        /*
+            这里需要计算 每次采集数据的最大缓冲区大小
+            上述计算出来的 minBufferSize 只是参考值, 并不是一个严格的值
+            比 minBufferSize 值大一些, 小一些都可以
+
+            设置该最大缓冲区值的时候, 每次读取的数据不能小于 mFaacInputSamplesCount 值
+            这是向 FAAC 编码器送入 PCM 样本的个数
+            如果读取的数据小于 mFaacInputSamplesCount 值
+            该 mFaacInputSamplesCount 字节大小的缓冲区就会读不满, 后面部分的数据都是空数据
+            肯定会造成电流
+
+            因此这里取值时, AudioRecord 创建时的最后一个参数 , 每次采集数据的最大缓冲区大小
+            必须要大于 mFaacInputSamplesCount 值;
+
+            下面的 maxBufferSizeInBytesForInitAudioRecord 值取
+            minBufferSize 和 mFaacInputSamplesCount 中的最大值
+         */
+        int maxBufferSizeInBytesForInitAudioRecord =
+                mFaacInputBytesCount > minBufferSize ? mFaacInputBytesCount : minBufferSize;
+
+
         /*
             public AudioRecord(int audioSource, int sampleRateInHz,
                                int channelConfig, int audioFormat,
@@ -60,10 +122,12 @@ public class AudioChannel {
          */
         mAudioRecord = new AudioRecord(
                 MediaRecorder.AudioSource.MIC,  // 声音来源 麦克风
-                44100,            // PCM 音频采样率 44100 Hz
+                SAMPLE_RATE_IN_HZ_44100,            // PCM 音频采样率 44100 Hz
                 AudioFormat.CHANNEL_IN_STEREO,  // 立体声
                 AudioFormat.ENCODING_PCM_16BIT, // 采样位数 16 位
-                minBufferSize);                 // 最小采样缓冲区个数
+                maxBufferSizeInBytesForInitAudioRecord);                 // 最小采样缓冲区个数
+
+
     }
 
     /**
@@ -96,10 +160,19 @@ public class AudioChannel {
         public void run() {
             // 开始录音采样
             mAudioRecord.startRecording();
-
+            // FAAC 编码器每次读取 mFaacInputSamplesCount 个样本
+            // 注意 : 一个样本 2 字节
+            // 字节个数是 mFaacInputBytesCount 个字节
+            byte[] readBuffer = new byte[mFaacInputBytesCount];
             while (isStartPush){
                 // 循环读取录音
-                //mAudioRecord.read();
+                int readLen = mAudioRecord.read(readBuffer, 0, readBuffer.length);
+
+                // 如果读取到的 PCM 音频采样数据大于 0
+                // 从到 JNI 层让 FAAC 编码器编码成 AAC 格式的音频数据
+                if(readLen > 0){
+
+                }
             }
 
             // 停止录音采样

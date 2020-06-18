@@ -37,13 +37,19 @@ public:
      */
     void setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack);
 
+    /**
+     * Java 层获取每次 FAAC 可以获取多少样本个数
+     * 用于 AudioRecord 的 read 方法
+     * 一次性读取多少样本
+     */
+    int getInputSamples();
 
 private:
 
     /**
      * RTMPPacket 数据包打包完毕回调函数
      */
-    RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack;
+    RTMPPacketPackUpCallBack mRtmpPacketPackUpCallBack;
 
     /**
      * 音频通道数
@@ -54,19 +60,30 @@ private:
      * 输入样本个数, 需要进行编码的 PCM 音频样本个数
      * FAAC 编码器最多一次可以接收的样本个数
      * 传递下面两个数值的地址到 faacEncOpen 函数中, 用于当做返回值使用
+     *
+     * 该数据需要返回给 Java 层
+     * Java 层每次从 AudioRecord 中读取 mInputSamples 个数据
      */
-    unsigned long inputSamples;
+    unsigned long mInputSamples;
 
     /**
      * FAAC 编码器最多一次可以接收的样本个数
      * 传递下面两个数值的地址到 faacEncOpen 函数中, 用于当做返回值使用
      */
-    unsigned long maxOutputBytes;
+    unsigned long mMaxOutputBytes;
 
     /**
      * PCM 音频 FAAC 编码器
+     * 将 PCM 采样数据编码成 FAAC 编码器
      */
     faacEncHandle mFaacEncHandle;
+
+    /**
+     * FAAC 编码输出缓冲区
+     * FAAC 编码后的 AAC 裸数据, 存储到该缓冲区中
+     * 该缓冲区在初始化 FAAC 编码器时创建
+     */
+    unsigned char* mFaacEncodeOutputBuffer;
 
 };
 

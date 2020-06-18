@@ -129,6 +129,9 @@ public class LivePusher {
      */
     public native void native_setAudioEncoderParameters(int sampleRateInHz, int channelConfig);
 
+    public native int native_getInputSamples();
+
+
 
 
     public native void native_stopPush();

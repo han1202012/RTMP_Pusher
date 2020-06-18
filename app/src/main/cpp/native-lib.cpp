@@ -324,3 +324,13 @@ Java_kim_hsl_rtmp_LivePusher_native_1setAudioEncoderParameters(JNIEnv *env, jobj
         mAudioChannel->setAudioEncoderParameters(sample_rate_in_hz, channel_config);
     }
 }
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1getInputSamples(JNIEnv *env, jobject thiz) {
+    // 获取 FAAC 音频编码器输入个数, 用于指导 Java 层 AudioRecord 每次读取多少字节数据
+    if(mAudioChannel){
+        return mAudioChannel->getInputSamples();
+    }
+    return  -1;
+}
