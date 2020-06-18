@@ -269,8 +269,8 @@ RTMPPacket *AudioChannel::getAudioDecodeInfo() {
         rtmpPacket->m_body[0] = 0xAE;
     }
 
-    // 编码出的声音 都是 0x01, 本方法是对音频数据进行编码的方法, 头信息肯定是 AF 01 数据
-    // 数据肯定是 AAC 格式的采样数据
+    // 编码出的声音 都是 0x01, 头信息是 AF 01 数据
+    // 如果是AAC 音频解码数据 , 那么头信息是 AF 00 数据
     rtmpPacket->m_body[1] = 0x00;
 
     // 拷贝 AAC 音频数据到 RTMPPacket 数据包中

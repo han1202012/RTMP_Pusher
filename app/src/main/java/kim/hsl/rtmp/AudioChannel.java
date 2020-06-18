@@ -26,6 +26,12 @@ public class AudioChannel {
      */
     public static final int AUDIO_CHANNEL_STEREO = 2;
 
+
+    /**
+     * 一个采样有 2 字节, 根据采样个数计算字节数
+     */
+    public static final int BYTES_OF_A_SAMPLE = 2;
+
     /**
      * 直播推流器
      */
@@ -76,7 +82,7 @@ public class AudioChannel {
         // 获取 FAAC 编码器一次可以读取的样本个数
         mFaacInputSamplesCount = mLivePusher.native_getInputSamples();
         // 获取 FAAC 编码器一次可以读取的字节个数
-        mFaacInputBytesCount = mFaacInputSamplesCount * 2;
+        mFaacInputBytesCount = mFaacInputSamplesCount * BYTES_OF_A_SAMPLE;
 
         /*
             获取 44100 立体声 / 单声道 16 位采样率的最小缓冲区大小
