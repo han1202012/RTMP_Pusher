@@ -226,9 +226,9 @@ RTMPPacket *AudioChannel::getAudioDecodeInfo() {
         类似于 H.264 视频信息中的 SPS 与  PPS 数据
 
         int FAACAPI faacEncGetDecoderSpecificInfo(
-                        faacEncHandle hEncoder,
-                        unsigned char **ppBuffer,
-					    unsigned long *pSizeOfDecoderSpecificInfo);
+                    faacEncHandle hEncoder,
+                    unsigned char **ppBuffer,
+                    unsigned long *pSizeOfDecoderSpecificInfo);
 
 
      */
