@@ -116,7 +116,7 @@ public class LivePusher {
     public native void native_setVideoEncoderParameters(int width, int height, int fps, int bitrate);
 
     /**
-     * 执行数据编码操作
+     * 执行视频数据编码操作
      * @param data
      */
     public native void native_encodeCameraData(byte[] data);
@@ -129,7 +129,18 @@ public class LivePusher {
      */
     public native void native_setAudioEncoderParameters(int sampleRateInHz, int channelConfig);
 
+    /**
+     * 获取 FAAC 编码器一次性输入的样本个数
+     * 注意是样本个数, 采样位数 16 位的情况下, 字节个数还需要乘以 2
+     * @return
+     */
     public native int native_getInputSamples();
+
+    /**
+     * 执行音频数据编码操作
+     * @param data
+     */
+    public native void native_encodeAudioData(byte[] data);
 
 
 

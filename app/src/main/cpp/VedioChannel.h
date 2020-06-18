@@ -11,12 +11,6 @@
 #include <pthread.h>
 #include "librtmp/rtmp.h"
 
-/*#include <memory.h>
-#include "librtmp/rtmp.h"
-#include <inttypes.h>
-#include <x264.h>
-#include <pthread.h>
-#include "librtmp/rtmp.h"*/
 
 /**
  * 视频处理类

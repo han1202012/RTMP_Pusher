@@ -126,3 +126,34 @@ void AudioChannel::setAudioEncoderParameters(int sampleRateInHz, int channelConf
 int AudioChannel::getInputSamples() {
     return mInputSamples;
 }
+
+/**
+ * 音频数据编码
+ * 接收 int8_t 类型的原因是, 这里处理的是 jbyte* 类型参数
+ * jbyte 类型就是 int8_t 类型
+ * @param data
+ */
+void AudioChannel::encodeAudioData(int8_t *data){
+
+    /*
+        函数原型 :
+        int FAACAPI faacEncEncode(
+            faacEncHandle hEncoder,
+            int32_t * inputBuffer,
+            unsigned int samplesInput,
+            unsigned char *outputBuffer,
+            unsigned int bufferSize);
+
+        faacEncHandle hEncoder 参数 : FAAC 编码器
+        int32_t * inputBuffer 参数 : 需要编码的 PCM 音频输入数据
+        unsigned int samplesInput : 传入的 PCM 样本个数
+        unsigned char *outputBuffer : 编码后的 AAC 格式音频输出缓冲区
+        unsigned int bufferSize : 输出缓冲区最大字节大小
+     */
+    faacEncEncode(
+            mFaacEncHandle, // FAAC 编码器
+            reinterpret_cast<int32_t *>(data), // 需要编码的 PCM 音频输入数据
+            mInputSamples, // 传入的 PCM 样本个数
+            mFaacEncodeOutputBuffer, // 编码后的 AAC 格式音频输出缓冲区
+            mMaxOutputBytes); // 输出缓冲区最大字节大小
+}

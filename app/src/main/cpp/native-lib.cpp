@@ -334,3 +334,24 @@ Java_kim_hsl_rtmp_LivePusher_native_1getInputSamples(JNIEnv *env, jobject thiz) 
     }
     return  -1;
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_kim_hsl_rtmp_LivePusher_native_1encodeAudioData(JNIEnv *env, jobject thiz, jbyteArray data) {
+    if(!mAudioChannel || !readyForPush){
+        // 如果 mAudioChannel 还没有进行初始化, 推流没有准备好了, 直接 return
+        __android_log_print(ANDROID_LOG_INFO, "RTMP", "还没有准备完毕, 稍后再尝试调用该方法 %d, %d", mAudioChannel, readyForPush);
+        return;
+    }
+
+    // 将 Java 层的 byte 数组类型 jbyteArray 转为 jbyte* 指针类型
+    // 注意这是局部引用变量, 不能跨线程, 跨方法调用, 需要将其存放在堆内存中
+    jbyte* dataFromJava = env->GetByteArrayElements(data, NULL);
+
+    // jbyte 是 int8_t 类型的, 因此这里我们将 encodeCameraData 的参数设置成 int8_t* 类型
+    // typedef int8_t   jbyte;    /* signed 8 bits */
+    mAudioChannel->encodeAudioData(dataFromJava);
+
+    // 释放局部引用变量
+    env->ReleaseByteArrayElements(data, dataFromJava, 0);
+}

@@ -11,7 +11,8 @@ add_library( # 函数库名称
 
              # 源文件
              native-lib.cpp
-             VedioChannel.cpp)
+             VedioChannel.cpp
+             AudioChannel.cpp)
 
 find_library( # 日志库
               log-lib

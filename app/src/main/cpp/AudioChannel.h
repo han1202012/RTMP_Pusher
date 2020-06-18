@@ -5,7 +5,12 @@
 #ifndef RTMP_PUSHER_AUDIOCHANNEL_H
 #define RTMP_PUSHER_AUDIOCHANNEL_H
 
+#include <memory.h>
+#include <inttypes.h>
 #include <faac.h>
+#include <pthread.h>
+#include "librtmp/rtmp.h"
+
 
 /**
  * 音频编码器
@@ -43,6 +48,14 @@ public:
      * 一次性读取多少样本
      */
     int getInputSamples();
+
+    /**
+     * 音频数据编码
+     * 接收 int8_t 类型的原因是, 这里处理的是 jbyte* 类型参数
+     * jbyte 类型就是 int8_t 类型
+     * @param data
+     */
+    void encodeAudioData(int8_t *data);
 
 private:
 

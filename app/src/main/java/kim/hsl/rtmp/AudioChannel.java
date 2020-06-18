@@ -171,7 +171,8 @@ public class AudioChannel {
                 // 如果读取到的 PCM 音频采样数据大于 0
                 // 从到 JNI 层让 FAAC 编码器编码成 AAC 格式的音频数据
                 if(readLen > 0){
-
+                    // 将数据传入 JNI 层使用 FAAC 编码器进行编码
+                    mLivePusher.native_encodeAudioData(readBuffer);
                 }
             }
 
