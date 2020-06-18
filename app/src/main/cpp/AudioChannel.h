@@ -80,7 +80,7 @@ private:
     unsigned long mInputSamples;
 
     /**
-     * FAAC 编码器最多一次可以接收的样本个数
+     * FAAC 最大输出字节个数
      * 传递下面两个数值的地址到 faacEncOpen 函数中, 用于当做返回值使用
      */
     unsigned long mMaxOutputBytes;
