@@ -173,6 +173,11 @@ void* startRtmpPush (void* args){
         // 线程安全队列开始工作
         packets.setWork(1);
 
+        // 将 AAC 音频解码信息先放到 RTMP 数据包线程安全队列中
+        if(mAudioChannel) {
+            RTMPPacketPackUpCallBack(mAudioChannel->getAudioDecodeInfo());
+        }
+
         __android_log_print(ANDROID_LOG_INFO, "RTMP", "开始直播, 推流地址 %s", pushPath);
         while (isStartRtmpPush) {
             // 从线程安全队列中

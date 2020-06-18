@@ -57,6 +57,12 @@ public:
      */
     void encodeAudioData(int8_t *data);
 
+    /**
+     * 获取音频解码信息
+     * @return 音频解码数据包
+     */
+    RTMPPacket* getAudioDecodeInfo();
+
 private:
 
     /**

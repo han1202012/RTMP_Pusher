@@ -9,22 +9,22 @@
 /**
  * 构造方法
  */
-AudioChannel::AudioChannel(){
+AudioChannel::AudioChannel() {
 
 }
 
 /**
  * 析构方法
  */
-AudioChannel::~AudioChannel(){
+AudioChannel::~AudioChannel() {
     // 释放 FAAC 编码 AAC 缓冲区
-    if(mFaacEncodeOutputBuffer){
+    if (mFaacEncodeOutputBuffer) {
         delete mFaacEncodeOutputBuffer;
         mFaacEncodeOutputBuffer = 0;
     }
 
     // 释放 FAAC 编码器
-    if(mFaacEncHandle){
+    if (mFaacEncHandle) {
         delete mFaacEncHandle;
         mFaacEncHandle = 0;
     }
@@ -35,7 +35,7 @@ AudioChannel::~AudioChannel(){
  * 打包 RTMP 包后的回调函数
  * @param rtmpPacketPackUpCallBack
  */
-void AudioChannel::setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack){
+void AudioChannel::setRTMPPacketPackUpCallBack(RTMPPacketPackUpCallBack rtmpPacketPackUpCallBack) {
     this->mRtmpPacketPackUpCallBack = rtmpPacketPackUpCallBack;
 }
 
@@ -133,7 +133,7 @@ int AudioChannel::getInputSamples() {
  * jbyte 类型就是 int8_t 类型
  * @param data
  */
-void AudioChannel::encodeAudioData(int8_t *data){
+void AudioChannel::encodeAudioData(int8_t *data) {
 
     /*
         函数原型 :
@@ -149,11 +149,149 @@ void AudioChannel::encodeAudioData(int8_t *data){
         unsigned int samplesInput : 传入的 PCM 样本个数
         unsigned char *outputBuffer : 编码后的 AAC 格式音频输出缓冲区
         unsigned int bufferSize : 输出缓冲区最大字节大小
+
+        返回值 : 编码后的数据字节长度
      */
-    faacEncEncode(
+    int encodeAacDataByteCount = faacEncEncode(
             mFaacEncHandle, // FAAC 编码器
             reinterpret_cast<int32_t *>(data), // 需要编码的 PCM 音频输入数据
             mInputSamples, // 传入的 PCM 样本个数
             mFaacEncodeOutputBuffer, // 编码后的 AAC 格式音频输出缓冲区
             mMaxOutputBytes); // 输出缓冲区最大字节大小
+
+
+    // 组装 RTMP 数据包
+    if (encodeAacDataByteCount > 0) {
+        /*
+            数据的大小 :
+            前面有 2 字节头信息
+            音频解码配置信息 : 前两位是 AF 00 , 指导 AAC 数据如何解码
+            音频采样信息 : 前两位是 AF 01 , 实际的 AAC 音频采样数据
+         */
+        int rtmpPackagesize = 2 + encodeAacDataByteCount;
+
+        // 创建 RTMP 数据包对象
+        RTMPPacket *rtmpPacket = new RTMPPacket;
+
+        // 为 RTMP 数据包分配内存
+        RTMPPacket_Alloc(rtmpPacket, rtmpPackagesize);
+
+        /*
+            根据声道数生成相应的 文件头 标识
+            AF / AE 头中的最后一位为 1 表示立体声, 为 0 表示单声道
+            AF 是立体声
+            AE 是单声道
+         */
+        rtmpPacket->m_body[0] = 0xAF;   //默认立体声
+
+        if (mChannelConfig == 1) {
+            // 如果是单声道, 将该值修改成 AE
+            rtmpPacket->m_body[0] = 0xAE;
+        }
+
+        // 编码出的声音 都是 0x01, 本方法是对音频数据进行编码的方法, 头信息肯定是 AF 01 数据
+        // 数据肯定是 AAC 格式的采样数据
+        rtmpPacket->m_body[1] = 0x01;
+
+        // 拷贝 AAC 音频数据到 RTMPPacket 数据包中
+        memcpy(&rtmpPacket->m_body[2], mFaacEncodeOutputBuffer, encodeAacDataByteCount);
+
+        // 设置绝对时间, 一般设置 0 即可
+        rtmpPacket->m_hasAbsTimestamp = 0;
+        // 设置 RTMP 数据包大小
+        rtmpPacket->m_nBodySize = rtmpPackagesize;
+        // 设置 RTMP 包类型, 视频类型数据
+        rtmpPacket->m_packetType = RTMP_PACKET_TYPE_AUDIO;
+        // 分配 RTMP 通道, 该值随意设置, 建议在视频 H.264 通道基础上加 1
+        rtmpPacket->m_nChannel = 0x11;
+        // // 设置头类型, 随意设置一个
+        rtmpPacket->m_headerType = RTMP_PACKET_SIZE_LARGE;
+
+        // 调用回调接口, 将该封装好的 RTMPPacket 数据包放入 native-lib 类中的 线程安全队列中
+        // 这是个 RTMPPacketPackUpCallBack 类型的函数指针
+        mRtmpPacketPackUpCallBack(rtmpPacket);
+    }
+
+}
+
+
+/**
+ * 获取音频解码信息
+ * 推流音频数据时, 先发送解码信息包, 再推流 AAC 音频采样包
+ * @return 音频解码数据包
+ */
+RTMPPacket *AudioChannel::getAudioDecodeInfo() {
+
+    /*
+        下面的数据信息用于指导 AAC 数据如何进行解码
+        类似于 H.264 视频信息中的 SPS 与  PPS 数据
+
+        int FAACAPI faacEncGetDecoderSpecificInfo(
+                        faacEncHandle hEncoder,
+                        unsigned char **ppBuffer,
+					    unsigned long *pSizeOfDecoderSpecificInfo);
+
+
+     */
+    // 该指针用于接收获取的 FAAC 解码特殊信息
+    u_char *pBuffer;
+    // 该指针用于接收获取的 FAAC 解码特殊信息长度
+    u_long sizeOfDecoderSpecificInfo;
+    // 生成 FAAC 解码特殊信息数据
+    faacEncGetDecoderSpecificInfo(mFaacEncHandle, &pBuffer, &sizeOfDecoderSpecificInfo);
+
+
+    // 组装 RTMP 数据包
+
+    /*
+        数据的大小 :
+        前面有 2 字节头信息
+        音频解码配置信息 : 前两位是 AF 00 , 指导 AAC 数据如何解码 ( 是这个 )
+        音频采样信息 : 前两位是 AF 01 , 实际的 AAC 音频采样数据
+     */
+    int rtmpPackagesize = 2 + sizeOfDecoderSpecificInfo;
+
+    // 创建 RTMP 数据包对象
+    RTMPPacket *rtmpPacket = new RTMPPacket;
+
+    // 为 RTMP 数据包分配内存
+    RTMPPacket_Alloc(rtmpPacket, rtmpPackagesize);
+
+    /*
+        根据声道数生成相应的 文件头 标识
+        AF / AE 头中的最后一位为 1 表示立体声, 为 0 表示单声道
+        AF 是立体声
+        AE 是单声道
+     */
+    rtmpPacket->m_body[0] = 0xAF;   //默认立体声
+
+    if (mChannelConfig == 1) {
+        // 如果是单声道, 将该值修改成 AE
+        rtmpPacket->m_body[0] = 0xAE;
+    }
+
+    // 编码出的声音 都是 0x01, 本方法是对音频数据进行编码的方法, 头信息肯定是 AF 01 数据
+    // 数据肯定是 AAC 格式的采样数据
+    rtmpPacket->m_body[1] = 0x00;
+
+    // 拷贝 AAC 音频数据到 RTMPPacket 数据包中
+    memcpy(&rtmpPacket->m_body[2], pBuffer, sizeOfDecoderSpecificInfo);
+
+    // 设置绝对时间, 一般设置 0 即可
+    rtmpPacket->m_hasAbsTimestamp = 0;
+    // 设置 RTMP 数据包大小
+    rtmpPacket->m_nBodySize = rtmpPackagesize;
+    // 设置 RTMP 包类型, 视频类型数据
+    rtmpPacket->m_packetType = RTMP_PACKET_TYPE_AUDIO;
+    // 分配 RTMP 通道, 该值随意设置, 建议在视频 H.264 通道基础上加 1
+    rtmpPacket->m_nChannel = 0x11;
+    // // 设置头类型, 随意设置一个
+    rtmpPacket->m_headerType = RTMP_PACKET_SIZE_LARGE;
+
+    // 调用回调接口, 将该封装好的 RTMPPacket 数据包放入 native-lib 类中的 线程安全队列中
+    // 这是个 RTMPPacketPackUpCallBack 类型的函数指针
+    // 这里不回调, 直接返回 rtmpPacket
+    //mRtmpPacketPackUpCallBack(rtmpPacket);
+
+    return rtmpPacket;
 }
