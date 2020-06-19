@@ -28,7 +28,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:text="推流地址 : rtmp://47.94.36.51/myapp/0"
+        android:text="推流地址 : "
         android:padding="5dip"
         android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"

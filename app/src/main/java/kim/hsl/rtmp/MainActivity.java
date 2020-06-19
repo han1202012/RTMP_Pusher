@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -92,7 +93,9 @@ public class MainActivity extends AppCompatActivity {
                 // rtmp://47.94.36.51/myapp/0
                 // 0 相当于 直播的 密码
                 // 配置好服务器后, 记录 IP 地址, 替换 47.94.36.51 IP 地址
-                mLivePusher.startLive("rtmp://59.110.116.214/myapp/mystream");
+                String rtmpServerAddress = "rtmp://123.56.88.254/myapp/mystream";
+                mLivePusher.startLive(rtmpServerAddress);
+                ((TextView)findViewById(R.id.textViewUrl)).setText("推流地址 : " + rtmpServerAddress);
             }
         });
 
