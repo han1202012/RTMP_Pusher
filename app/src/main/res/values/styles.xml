@@ -6,6 +6,22 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- 设置应用启动时默认显示的图片 , 这样比白屏/黑屏体验好一些 -->
+        <!--<item name="android:windowBackground">@mipmap/ic_launcher</item>-->
+
+        <!-- 将背景设置成透明的 -->
+        <!--<item name="android:windowIsTranslucent">true</item>-->
+    </style>
+
+    <style name="AppTheme.Launcher.Translucent" parent="AppTheme">
+        <!-- 将背景设置成透明的 -->
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
+
+    <style name="AppTheme.Launcher.Picture" parent="AppTheme">
+        <!-- 设置应用启动时默认显示的图片 , 这样比白屏/黑屏体验好一些 -->
+        <item name="android:windowBackground">@mipmap/ic_launcher</item>
     </style>
 
 </resources>

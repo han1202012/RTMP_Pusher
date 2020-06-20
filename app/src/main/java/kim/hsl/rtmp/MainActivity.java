@@ -70,6 +70,11 @@ public class MainActivity extends AppCompatActivity {
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        /*
+            此时应用首界面启动完成, 将主题恢复成其它主题
+            此处也可以根据不同的设置, 为应用设置不同的主题
+         */
+        setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
