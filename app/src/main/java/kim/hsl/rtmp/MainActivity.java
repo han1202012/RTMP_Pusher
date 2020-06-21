@@ -5,12 +5,16 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Debug;
+import android.os.Environment;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,6 +80,11 @@ public class MainActivity extends AppCompatActivity {
          */
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
+
+        File traceFile = new File(Environment.getExternalStorageDirectory(), "Method_Trace");
+        Debug.startMethodTracing(traceFile.getAbsolutePath());
+
+
         setContentView(R.layout.activity_main);
 
         // 初始化权限
@@ -103,6 +112,9 @@ public class MainActivity extends AppCompatActivity {
                 ((TextView)findViewById(R.id.textViewUrl)).setText("推流地址 : " + rtmpServerAddress);
             }
         });
+
+        // 停止方法追踪
+        Debug.stopMethodTracing();
 
     }
 }
