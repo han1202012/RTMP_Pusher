@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
 
-        // ★ 将追踪信息存放到该文件中
+        // ★ 1. 将追踪信息存放到该文件中
         File traceFile = new File(Environment.getExternalStorageDirectory(), "Method_Trace");
         // ★ 开启方法追踪
         Debug.startMethodTracing(traceFile.getAbsolutePath());
