@@ -81,21 +81,23 @@ public class MainActivity extends AppCompatActivity {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
 
+        // 初始化权限
+        initPermissions();
+
         // ★ 1. 将追踪信息存放到该文件中
         File traceFile = new File(Environment.getExternalStorageDirectory(), "Method_Trace");
-        // ★ 开启方法追踪
+        // ★ 2. 开启方法追踪
         Debug.startMethodTracing(traceFile.getAbsolutePath());
 
         setContentView(R.layout.activity_main);
-
-        // 初始化权限
-        initPermissions();
 
         mSurfaceView = findViewById(R.id.surfaceView);
 
         // 创建直播推流器, 用于将采集的视频数据推流到服务器端
         // 800_000 代表 800K 的码率
-        mLivePusher = new LivePusher(this, 640, 480, 800_000, 10, Camera.CameraInfo.CAMERA_FACING_BACK);
+        mLivePusher = new LivePusher(this,
+                640, 480, 800_000, 10,
+                Camera.CameraInfo.CAMERA_FACING_BACK);
 
         // 设置 Camera 采集的图像本地预览的组件, 在 mSurfaceView 界面先绘制摄像头
         // 此处要为 SurfaceHolder 设置 SurfaceHolder.Callback 回调 , 通过里面的回调函数
@@ -105,17 +107,20 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.button_play).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // rtmp://47.94.36.51/myapp/0
+                // rtmp://123.56.88.254/myapp/0
                 // 0 相当于 直播的 密码
-                // 配置好服务器后, 记录 IP 地址, 替换 47.94.36.51 IP 地址
+                // 配置好服务器后, 记录 IP 地址, 替换 123.56.88.254 IP 地址
+                // rtmp://123.56.88.254/myapp/mystream 地址推流后
+                // 可以直接在 RTMP 服务器端的主页, 使用 JWPlayer 观看直播内容
+                // 网页地址是 http//123.56.88.254:8080/
                 String rtmpServerAddress = "rtmp://123.56.88.254/myapp/mystream";
                 mLivePusher.startLive(rtmpServerAddress);
-                ((TextView)findViewById(R.id.textViewUrl)).setText("推流地址 : " + rtmpServerAddress);
+                ((TextView)findViewById(R.id.textViewUrl))
+                        .setText("推流地址 : " + rtmpServerAddress);
             }
         });
 
-        // ★ 停止方法追踪
+        // ★ 3. 停止方法追踪
         Debug.stopMethodTracing();
-
     }
 }
