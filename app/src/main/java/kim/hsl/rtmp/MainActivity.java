@@ -81,6 +81,9 @@ public class MainActivity extends AppCompatActivity {
         setTheme(R.style.AppTheme);
         super.onCreate(savedInstanceState);
 
+        // 删除背景, 该调用必须在 super.onCreate 之后, setContentView 之前
+        //getWindow().setBackgroundDrawable(null);
+
         // 初始化权限
         initPermissions();
 

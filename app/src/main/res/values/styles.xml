@@ -24,4 +24,9 @@
         <item name="android:windowBackground">@mipmap/ic_launcher</item>
     </style>
 
+    <style name="AppTheme.NoBackground" parent="AppTheme">
+        <!-- 布局渲染时, 不设置主题背景, 避免过度重绘 -->
+        <item name="android:windowBackground">null</item>
+    </style>
+
 </resources>
