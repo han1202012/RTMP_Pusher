@@ -2,6 +2,7 @@ package kim.hsl.rtmp;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
 import android.hardware.Camera;
 import android.os.Build;
 import android.os.Bundle;
